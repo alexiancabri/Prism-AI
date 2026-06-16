@@ -55,6 +55,10 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
         chart: {
           "1": "hsl(var(--chart-1))",
           "2": "hsl(var(--chart-2))",
@@ -62,9 +66,18 @@ export default {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+        spectrum: {
+          1: "hsl(var(--spectrum-1))",
+          2: "hsl(var(--spectrum-2))",
+          3: "hsl(var(--spectrum-3))",
+          4: "hsl(var(--spectrum-4))",
+          5: "hsl(var(--spectrum-5))",
+        },
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Space Grotesk", "Inter", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -92,6 +105,14 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      backgroundImage: {
+        /* Clean ink fill for primary actions, with a faint horizontal sheen
+           so the existing hover bg-position pan stays subtle. */
+        "spectrum-gradient":
+          "linear-gradient(100deg, hsl(222 47% 16%), hsl(222 47% 9%), hsl(222 47% 16%))",
+        "brand-gradient":
+          "linear-gradient(100deg, hsl(var(--spectrum-1)), hsl(var(--spectrum-3)))",
       },
     },
   },

@@ -2,111 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* =========================================================================
+   PRISM — Design System
+   Clean, precise, light. A document intelligence product.
+   One restrained cool-blue accent with a subtle refraction nod.
+   All colors are HSL.
+   ========================================================================= */
 
 @layer base {
   :root {
+    /* Paper-white canvas, slate ink */
     --background: 0 0% 100%;
-    --foreground: 215 25% 15%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 217 91% 25%;
+    /* Primary = ink. Clean black actions. */
+    --primary: 222 47% 11%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 217 91% 25%;
+    --secondary: 220 20% 96.5%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 214 32% 95%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 20% 96.5%;
+    --muted-foreground: 215 16% 44%;
 
-    --accent: 214 32% 91%;
-    --accent-foreground: 217 91% 25%;
+    --accent: 214 100% 96%;
+    --accent-foreground: 221 83% 45%;
 
-    --success: 142 76% 36%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 38%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 214 32% 88%;
-    --input: 214 32% 88%;
-    --ring: 217 91% 25%;
+    --border: 220 16% 90%;
+    --input: 220 16% 90%;
+    --ring: 221 83% 53%;
 
     --radius: 0.75rem;
-    
-    --chart-1: 217 91% 25%;
-    --chart-2: 142 76% 36%;
-    --chart-3: 0 84% 60%;
+
+    /* Brand accent + a restrained cool family for category color-coding.
+       No purple — blue → sky → cyan → teal → slate. */
+    --brand: 221 83% 53%;
+    --spectrum-1: 221 83% 53%; /* blue */
+    --spectrum-2: 205 90% 48%; /* sky */
+    --spectrum-3: 190 85% 41%; /* cyan */
+    --spectrum-4: 172 66% 38%; /* teal */
+    --spectrum-5: 215 25% 45%; /* slate */
+
+    --chart-1: 221 83% 53%;
+    --chart-2: 190 85% 41%;
+    --chart-3: 172 66% 38%;
     --chart-4: 38 92% 50%;
-    --chart-5: 262 83% 58%;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 215 28% 10%;
-    --foreground: 0 0% 95%;
-
-    --card: 215 28% 12%;
-    --card-foreground: 0 0% 95%;
-
-    --popover: 215 28% 12%;
-    --popover-foreground: 0 0% 95%;
-
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 215 28% 18%;
-    --secondary-foreground: 0 0% 95%;
-
-    --muted: 215 28% 18%;
-    --muted-foreground: 215 20% 65%;
-
-    --accent: 215 28% 18%;
-    --accent-foreground: 0 0% 95%;
-
-    --success: 142 70% 45%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 90% 55%;
-    --warning-foreground: 0 0% 100%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 215 28% 20%;
-    --input: 215 28% 20%;
-    --ring: 217 91% 60%;
-    
-    --chart-1: 217 91% 60%;
-    --chart-2: 142 70% 45%;
-    --chart-3: 0 72% 51%;
-    --chart-4: 38 90% 55%;
-    --chart-5: 262 83% 65%;
+    --chart-5: 215 25% 45%;
   }
 }
 
@@ -115,37 +71,179 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-family: "Inter", system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: hsl(var(--brand) / 0.18);
+    color: hsl(var(--foreground));
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+    border: 3px solid hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+
+  .font-display {
+    font-family: "Space Grotesk", "Inter", sans-serif;
+    letter-spacing: -0.025em;
+  }
+
+  .font-mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+}
+
+@layer components {
+  /* Accent type — a tight, static blue→cyan refraction. No animation. */
+  .text-spectrum {
+    background: linear-gradient(
+      115deg,
+      hsl(var(--spectrum-1)),
+      hsl(var(--spectrum-3))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Light glass surface */
+  .glass {
+    background: hsl(0 0% 100% / 0.7);
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    border: 1px solid hsl(var(--border) / 0.9);
+  }
+
+  .glass-strong {
+    background: hsl(0 0% 100% / 0.85);
+    backdrop-filter: blur(20px) saturate(130%);
+    -webkit-backdrop-filter: blur(20px) saturate(130%);
+    border: 1px solid hsl(var(--border));
+    box-shadow:
+      0 1px 2px hsl(222 47% 11% / 0.04),
+      0 12px 32px -16px hsl(222 47% 11% / 0.14);
+  }
+
+  /* Subtle accent border */
+  .border-spectrum {
+    position: relative;
+    background-clip: padding-box;
+    border: 1px solid transparent;
+  }
+  .border-spectrum::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    margin: -1px;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--brand) / 0.35),
+      hsl(var(--spectrum-3) / 0.18),
+      hsl(var(--border))
+    );
+  }
+
+  /* Clean accent lift (used on highlighted cards) */
+  .glow-violet {
+    box-shadow:
+      0 0 0 1px hsl(var(--brand) / 0.25),
+      0 18px 40px -20px hsl(var(--brand) / 0.35);
+  }
+
+  /* Crisp hairline card shadow */
+  .card-shadow {
+    box-shadow:
+      0 1px 2px hsl(222 47% 11% / 0.04),
+      0 8px 24px -16px hsl(222 47% 11% / 0.1);
   }
 }
 
 @layer utilities {
   .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
+    animation: fade-in 0.6s ease-out both;
   }
-  
   .animate-slide-up {
-    animation: slide-up 0.5s ease-out;
+    animation: slide-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
+  .animate-float {
+    animation: float 8s ease-in-out infinite;
+  }
+  .animate-aurora {
+    animation: aurora 20s ease-in-out infinite alternate;
+  }
+  .animate-blink {
+    animation: blink 1s step-end infinite;
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(hsl(222 47% 11% / 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(222 47% 11% / 0.045) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, black 30%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, black 30%, transparent 100%);
+  }
+
+  .bg-dots {
+    background-image: radial-gradient(hsl(222 47% 11% / 0.07) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  .delay-100 { animation-delay: 0.1s; }
+  .delay-200 { animation-delay: 0.2s; }
+  .delay-300 { animation-delay: 0.3s; }
+  .delay-500 { animation-delay: 0.5s; }
+  .delay-700 { animation-delay: 0.7s; }
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes aurora {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0.5; }
+  100% { transform: translate(-4%, 4%) scale(1.08); opacity: 0.7; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
 }
