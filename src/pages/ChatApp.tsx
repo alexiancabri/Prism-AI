@@ -10,11 +10,7 @@ import {
   MessagesSquare,
 } from "lucide-react";
 import AppLayout from "@/components/app/AppLayout";
-import {
-  api,
-  type Citation,
-  type Message,
-} from "@/lib/api";
+import { api, type Citation, type Message } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /** Wrap the exact quoted substring in a blue highlight. */
@@ -26,7 +22,7 @@ function Highlighted({ content, quote }: { content: string; quote: string }) {
   return (
     <span>
       {content.slice(0, idx)}
-      <mark className="rounded bg-indigo-100 px-0.5 text-indigo-900">
+      <mark className="rounded bg-[#3b82f6]/30 px-0.5 text-[#bfd4ff]">
         {content.slice(idx, idx + quote.length)}
       </mark>
       {content.slice(idx + quote.length)}
@@ -48,17 +44,17 @@ function DocumentPreview({
   });
 
   return (
-    <div className="flex h-full w-[420px] shrink-0 flex-col border-l border-neutral-200 bg-white">
-      <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4">
+    <div className="flex h-full w-[420px] shrink-0 flex-col border-l border-white/10 bg-black/40">
+      <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <div className="flex min-w-0 items-center gap-2">
-          <FileText className="h-4 w-4 shrink-0 text-neutral-400" />
-          <span className="truncate text-sm font-semibold">
+          <FileText className="h-4 w-4 shrink-0 text-neutral-500" />
+          <span className="truncate text-sm font-semibold text-neutral-100">
             {citation.document_name}
           </span>
         </div>
         <button
           onClick={onClose}
-          className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+          className="rounded-md p-1.5 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
         >
           <X className="h-4 w-4" />
         </button>
@@ -66,7 +62,7 @@ function DocumentPreview({
 
       <div className="flex-1 overflow-y-auto px-5 py-4">
         {isLoading && (
-          <div className="flex items-center gap-2 text-sm text-neutral-400">
+          <div className="flex items-center gap-2 text-sm text-neutral-500">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading document…
           </div>
         )}
@@ -78,11 +74,11 @@ function DocumentPreview({
               className={cn(
                 "mb-3 rounded-lg border p-3 text-sm leading-relaxed",
                 isCited
-                  ? "border-indigo-200 bg-indigo-50/40"
+                  ? "border-[#3b82f6]/30 bg-[#3b82f6]/[0.06] text-neutral-200"
                   : "border-transparent text-neutral-500",
               )}
             >
-              <div className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-400">
+              <div className="app-mono mb-1 text-[10px] uppercase tracking-wider text-neutral-600">
                 {chunk.location}
               </div>
               {isCited ? (
@@ -138,7 +134,6 @@ export default function ChatApp() {
     setPending({ question });
 
     try {
-      // Ensure a conversation exists.
       let convoId = activeId;
       if (!convoId) {
         const convo = await api.createConversation(
@@ -156,7 +151,6 @@ export default function ChatApp() {
       queryClient.invalidateQueries({ queryKey: ["messages", convoId] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
     } catch (err) {
-      // Surface the failure as an assistant-style error bubble.
       if (activeId) {
         await api
           .addMessage(
@@ -174,20 +168,20 @@ export default function ChatApp() {
 
   return (
     <AppLayout>
-      <div className="flex h-screen">
+      <div className="relative z-10 flex h-screen">
         {/* Conversation history */}
-        <div className="flex w-64 shrink-0 flex-col border-r border-neutral-200 bg-white">
+        <div className="flex w-64 shrink-0 flex-col border-r border-white/10 bg-black/40">
           <div className="p-3">
             <button
               onClick={newConversation}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-3 py-2 text-sm font-semibold text-white hover:bg-[#3b82f6]"
             >
               <Plus className="h-4 w-4" /> New chat
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-2 pb-3">
             {conversations.length === 0 && (
-              <p className="px-3 py-4 text-sm text-neutral-400">
+              <p className="px-3 py-4 text-sm text-neutral-600">
                 No conversations yet.
               </p>
             )}
@@ -201,8 +195,8 @@ export default function ChatApp() {
                 className={cn(
                   "mb-1 flex w-full items-center gap-2 truncate rounded-lg px-3 py-2 text-left text-sm",
                   activeId === c.id
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "text-neutral-600 hover:bg-neutral-100",
+                    ? "bg-[#3b82f6]/10 text-[#3b82f6]"
+                    : "text-neutral-400 hover:bg-white/5",
                 )}
               >
                 <MessagesSquare className="h-3.5 w-3.5 shrink-0" />
@@ -213,12 +207,12 @@ export default function ChatApp() {
         </div>
 
         {/* Chat area */}
-        <div className="flex flex-1 flex-col bg-neutral-50">
+        <div className="flex flex-1 flex-col">
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6">
             <div className="mx-auto max-w-2xl space-y-6">
               {messages.length === 0 && !pending && (
                 <div className="mt-20 text-center">
-                  <h2 className="text-lg font-semibold text-neutral-900">
+                  <h2 className="text-lg font-semibold text-neutral-100">
                     Ask anything about your documents
                   </h2>
                   <p className="mt-1 text-sm text-neutral-500">
@@ -240,11 +234,11 @@ export default function ChatApp() {
               {pending && (
                 <>
                   <div className="flex justify-end">
-                    <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-indigo-600 px-4 py-2.5 text-sm text-white">
+                    <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-[#2563eb] px-4 py-2.5 text-sm text-white">
                       {pending.question}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-neutral-400">
+                  <div className="flex items-center gap-2 text-sm text-neutral-500">
                     <Loader2 className="h-4 w-4 animate-spin" /> Searching your
                     documents…
                   </div>
@@ -254,7 +248,7 @@ export default function ChatApp() {
           </div>
 
           {/* Composer */}
-          <div className="border-t border-neutral-200 bg-white px-6 py-4">
+          <div className="border-t border-white/10 px-6 py-4">
             <div className="mx-auto flex max-w-2xl items-end gap-2">
               <textarea
                 value={input}
@@ -267,12 +261,12 @@ export default function ChatApp() {
                 }}
                 rows={1}
                 placeholder="Ask a question…"
-                className="max-h-40 flex-1 resize-none rounded-xl border border-neutral-300 px-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                className="max-h-40 flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-[#3b82f6]/60"
               />
               <button
                 onClick={send}
                 disabled={!input.trim() || !!pending}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2563eb] text-white hover:bg-[#3b82f6] disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -304,7 +298,7 @@ function MessageBubble({
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-indigo-600 px-4 py-2.5 text-sm text-white">
+        <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-[#2563eb] px-4 py-2.5 text-sm text-white">
           {message.content}
         </div>
       </div>
@@ -314,7 +308,7 @@ function MessageBubble({
   const citations = message.citations ?? [];
   return (
     <div className="space-y-3">
-      <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-white px-4 py-3 text-sm leading-relaxed text-neutral-800 shadow-sm ring-1 ring-neutral-100">
+      <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-neutral-200">
         {message.content}
       </div>
 
@@ -329,15 +323,17 @@ function MessageBubble({
                 key={`${c.chunk_id}-${i}`}
                 onClick={() => onCitationClick(c)}
                 className={cn(
-                  "block w-full rounded-xl border bg-white p-3 text-left transition-colors hover:border-indigo-300",
-                  isActive ? "border-indigo-400 ring-2 ring-indigo-100" : "border-neutral-200",
+                  "block w-full rounded-xl border bg-white/[0.02] p-3 text-left transition-colors hover:border-[#3b82f6]/40",
+                  isActive
+                    ? "border-[#3b82f6]/60 ring-1 ring-[#3b82f6]/30"
+                    : "border-white/10",
                 )}
               >
                 <div className="flex items-start gap-2">
-                  <Quote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-400" />
-                  <p className="text-sm italic text-neutral-700">"{c.text}"</p>
+                  <Quote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#3b82f6]" />
+                  <p className="text-sm italic text-neutral-300">"{c.text}"</p>
                 </div>
-                <div className="mt-2 flex items-center gap-2 pl-5 text-xs text-neutral-400">
+                <div className="mt-2 flex items-center gap-2 pl-5 text-xs text-neutral-600">
                   <FileText className="h-3 w-3" />
                   <span className="font-medium text-neutral-500">
                     {c.document_name}

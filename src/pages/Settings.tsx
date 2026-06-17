@@ -19,8 +19,6 @@ export default function Settings() {
   async function deleteAccount() {
     setError(null);
     try {
-      // Supabase can't self-delete a user from the browser; we sign the user
-      // out and surface guidance. (A real impl calls a backend admin endpoint.)
       const { error: rpcError } = await supabase.rpc("request_account_deletion");
       if (rpcError && !/function .* does not exist/i.test(rpcError.message)) {
         throw rpcError;
@@ -32,63 +30,56 @@ export default function Settings() {
     }
   }
 
+  const inputCls =
+    "w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-neutral-300";
+
   return (
     <AppLayout>
-      <div className="mx-auto max-w-2xl px-8 py-8">
+      <div className="relative z-10 mx-auto max-w-2xl px-8 py-8">
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-          <p className="mt-1 text-sm text-neutral-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-100">
+            Settings
+          </h1>
+          <p className="mt-1 text-sm text-neutral-400">
             Manage your organization and account.
           </p>
         </header>
 
         {/* Organization */}
-        <section className="rounded-xl border border-neutral-200 bg-white">
-          <div className="border-b border-neutral-200 px-5 py-4">
-            <h2 className="text-sm font-semibold text-neutral-900">Organization</h2>
+        <section className="rounded-xl border border-white/10 bg-white/[0.02]">
+          <div className="border-b border-white/10 px-5 py-4">
+            <h2 className="text-sm font-semibold text-neutral-100">Organization</h2>
           </div>
           <div className="space-y-4 px-5 py-5">
             <div>
-              <label className="mb-1 block text-sm font-medium text-neutral-700">
-                Organization name
-              </label>
-              <input
-                readOnly
-                value={orgName(user?.email)}
-                className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-2 text-sm text-neutral-600"
-              />
+              <label className="app-kicker mb-1.5 block">Organization name</label>
+              <input readOnly value={orgName(user?.email)} className={inputCls} />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-neutral-700">
-                Email
-              </label>
-              <input
-                readOnly
-                value={user?.email ?? ""}
-                className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-2 text-sm text-neutral-600"
-              />
+              <label className="app-kicker mb-1.5 block">Email</label>
+              <input readOnly value={user?.email ?? ""} className={inputCls} />
             </div>
           </div>
         </section>
 
         {/* Danger zone */}
-        <section className="mt-6 rounded-xl border border-red-200 bg-white">
-          <div className="border-b border-red-100 px-5 py-4">
-            <h2 className="text-sm font-semibold text-red-700">Danger zone</h2>
+        <section className="mt-6 rounded-xl border border-red-500/30 bg-white/[0.02]">
+          <div className="border-b border-red-500/20 px-5 py-4">
+            <h2 className="text-sm font-semibold text-red-400">Danger zone</h2>
           </div>
           <div className="px-5 py-5">
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-neutral-400">
               Permanently delete your account and sign out. This cannot be undone.
             </p>
             {error && (
-              <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
                 {error}
               </p>
             )}
             {!confirming ? (
               <button
                 onClick={() => setConfirming(true)}
-                className="mt-4 rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                className="mt-4 rounded-lg border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/10"
               >
                 Delete account
               </button>
@@ -96,13 +87,13 @@ export default function Settings() {
               <div className="mt-4 flex items-center gap-3">
                 <button
                   onClick={deleteAccount}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
                 >
                   Yes, delete my account
                 </button>
                 <button
                   onClick={() => setConfirming(false)}
-                  className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                  className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-neutral-300 hover:bg-white/5"
                 >
                   Cancel
                 </button>

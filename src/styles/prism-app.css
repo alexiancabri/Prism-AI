@@ -1,0 +1,133 @@
+/* =========================================================================
+   PRISM APP — dark theme for the authenticated product (dashboard, sources,
+   chat, settings). Reuses the landing tokens (declared on .prism-landing) so
+   the in-app surface matches the marketing/auth pages.
+   ========================================================================= */
+
+.prism-landing.prism-app {
+  position: relative;
+  min-height: 100vh;
+  background: #000;
+  color: var(--text);
+  font-family: var(--sans);
+}
+.prism-landing.prism-app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(900px circle at 88% -8%, rgba(59, 130, 246, 0.06), transparent 55%),
+    radial-gradient(800px circle at 0% 100%, rgba(167, 139, 250, 0.04), transparent 55%);
+}
+
+/* mono label helper (matches the landing's kickers) */
+.prism-app .app-mono {
+  font-family: var(--mono);
+}
+.prism-app .app-kicker {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+/* dark scrollbars */
+.prism-app *::-webkit-scrollbar { width: 10px; height: 10px; }
+.prism-app *::-webkit-scrollbar-thumb {
+  background: #1d1d21;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.prism-app *::-webkit-scrollbar-track { background: transparent; }
+
+/* ============ GUIDED TOUR ("tutorial bot") ============ */
+.tour-highlight {
+  position: fixed;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.66),
+    0 0 0 1px var(--blue),
+    0 0 34px rgba(59, 130, 246, 0.4);
+  transition: top 0.28s ease, left 0.28s ease, width 0.28s ease, height 0.28s ease;
+  pointer-events: none;
+  z-index: 71;
+}
+.tour-card {
+  position: fixed;
+  z-index: 72;
+  width: 320px;
+  border-radius: var(--radius);
+  background: rgba(12, 12, 16, 0.92);
+  border: 0.5px solid var(--hairline-strong);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(14px);
+  padding: 18px;
+  transition: top 0.28s ease, left 0.28s ease;
+}
+.tour-bot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.tour-bot .av {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--blue), #7c5cff);
+  flex-shrink: 0;
+}
+.tour-bot .nm {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.tour-bot .nm span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+.tour-card h4 {
+  font-size: 15px;
+  font-weight: 650;
+  margin-bottom: 5px;
+  color: var(--text);
+}
+.tour-card p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+.tour-foot {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tour-dots { display: flex; gap: 6px; }
+.tour-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--hairline-strong);
+}
+.tour-dots i.on { background: var(--blue); }
+.tour-actions { display: flex; align-items: center; gap: 8px; }
+.tour-skip {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.tour-skip:hover { color: var(--text); }
