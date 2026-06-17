@@ -5,16 +5,31 @@ immediately. A background task extracts + chunks + embeds the file and flips
 the status to `ready` (or `failed`). The UI polls `GET /documents` to watch the
 transition.
 """
+import traceback
+
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 
 from ..auth import CurrentUser, User
 from ..chunking import chunk_document
 from ..db import get_supabase
-from ..embeddings import embed_texts
+from ..embeddings import embed_texts, to_pgvector
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 ALLOWED_EXT = (".pdf", ".docx")
+
+
+def _mark_failed(sb, document_id: str, reason: str) -> None:
+    """Record the failure reason; fall back gracefully if the `error` column
+    hasn't been added yet (so the app still works pre-migration)."""
+    try:
+        sb.table("documents").update(
+            {"status": "failed", "error": reason[:500]}
+        ).eq("id", document_id).execute()
+    except Exception:  # noqa: BLE001 — `error` column may not exist yet
+        sb.table("documents").update({"status": "failed"}).eq(
+            "id", document_id
+        ).execute()
 
 
 def _index_document(document_id: str, org_id: str, filename: str, data: bytes) -> None:
@@ -31,7 +46,7 @@ def _index_document(document_id: str, org_id: str, filename: str, data: bytes) -
                 "org_id": org_id,
                 "content": content,
                 "location": location,
-                "embedding": embedding,
+                "embedding": to_pgvector(embedding),
             }
             for (content, location), embedding in zip(chunks, embeddings)
         ]
@@ -39,13 +54,18 @@ def _index_document(document_id: str, org_id: str, filename: str, data: bytes) -
         for i in range(0, len(rows), 100):
             sb.table("chunks").insert(rows[i : i + 100]).execute()
 
-        sb.table("documents").update({"status": "ready"}).eq(
-            "id", document_id
-        ).execute()
-    except Exception:  # noqa: BLE001 — mark failed, surface in UI
-        sb.table("documents").update({"status": "failed"}).eq(
-            "id", document_id
-        ).execute()
+        try:
+            sb.table("documents").update({"status": "ready", "error": None}).eq(
+                "id", document_id
+            ).execute()
+        except Exception:  # noqa: BLE001 — `error` column may not exist yet
+            sb.table("documents").update({"status": "ready"}).eq(
+                "id", document_id
+            ).execute()
+    except Exception as exc:  # noqa: BLE001 — mark failed, surface the reason
+        print(f"[index] document {document_id} failed: {exc}")
+        traceback.print_exc()
+        _mark_failed(sb, document_id, str(exc))
 
 
 @router.post("/upload")
@@ -85,7 +105,7 @@ def list_documents(user: User = CurrentUser):
     sb = get_supabase()
     res = (
         sb.table("documents")
-        .select("id, name, size, status, created_at")
+        .select("*")
         .eq("org_id", user.org_id)
         .order("created_at", desc=True)
         .execute()
@@ -99,7 +119,7 @@ def get_document(document_id: str, user: User = CurrentUser):
     sb = get_supabase()
     doc = (
         sb.table("documents")
-        .select("id, name, size, status, created_at")
+        .select("*")
         .eq("id", document_id)
         .eq("org_id", user.org_id)
         .execute()

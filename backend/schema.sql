@@ -25,8 +25,12 @@ create table if not exists documents (
   name text,
   size integer,
   status text default 'indexing',
+  error text,
   created_at timestamptz default now()
 );
+
+-- For projects created before `error` existed:
+alter table documents add column if not exists error text;
 
 create table if not exists chunks (
   id uuid primary key default gen_random_uuid(),

@@ -10,7 +10,7 @@ from .. import config
 from ..answering import answer_question
 from ..auth import CurrentUser, User
 from ..db import get_supabase
-from ..embeddings import embed_query
+from ..embeddings import embed_query, to_pgvector
 
 router = APIRouter(tags=["query"])
 
@@ -21,7 +21,7 @@ class QueryRequest(BaseModel):
 
 def _retrieve(org_id: str, question: str) -> list[dict]:
     sb = get_supabase()
-    query_embedding = embed_query(question)
+    query_embedding = to_pgvector(embed_query(question))
     res = sb.rpc(
         "match_chunks",
         {

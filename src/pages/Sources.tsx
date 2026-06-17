@@ -233,6 +233,14 @@ export default function Sources() {
                       {formatSize(doc.size)} ·{" "}
                       {new Date(doc.created_at).toLocaleDateString()}
                     </p>
+                    {doc.status === "failed" && doc.error && (
+                      <p
+                        className="mt-1 truncate text-xs text-red-400"
+                        title={doc.error}
+                      >
+                        {doc.error}
+                      </p>
+                    )}
                   </div>
                   <StatusBadge status={doc.status} />
                   <button

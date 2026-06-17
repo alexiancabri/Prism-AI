@@ -8,6 +8,7 @@ export interface DocumentRow {
   name: string;
   size: number;
   status: "indexing" | "ready" | "failed";
+  error?: string | null;
   created_at: string;
 }
 

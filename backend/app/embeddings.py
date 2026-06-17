@@ -28,3 +28,13 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
 
 def embed_query(text: str) -> list[float]:
     return embed_texts([text])[0]
+
+
+def to_pgvector(vec: list[float]) -> str:
+    """Format a vector as pgvector's text literal, e.g. "[0.1,0.2,...]".
+
+    PostgREST reliably casts this string to the `vector` column / RPC arg.
+    Passing a raw JSON array can fail to coerce into the vector type on some
+    PostgREST/pgvector versions, so we always send the text form.
+    """
+    return "[" + ",".join(repr(float(x)) for x in vec) + "]"
