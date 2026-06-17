@@ -40,8 +40,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) throw error;
+    // Update context immediately so redirects don't race the auth-state event.
+    setSession(data.session);
   }
 
   async function signUp(email: string, password: string) {

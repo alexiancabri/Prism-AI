@@ -26,7 +26,7 @@ const PRISM_MARK = (
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 export default function AuthForm({ mode }: Props) {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, session } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -85,6 +85,12 @@ export default function AuthForm({ mode }: Props) {
     }
   }, [emailLit, passwordLit]);
 
+  // Redirect once the session is actually established (avoids a race where we
+  // navigate before the auth context updates and ProtectedRoute bounces back).
+  useEffect(() => {
+    if (session) navigate("/dashboard", { replace: true });
+  }, [session, navigate]);
+
   // Card 3D tilt + cursor spotlight; ambient glow follows the cursor.
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
     const card = cardRef.current;
@@ -118,17 +124,16 @@ export default function AuthForm({ mode }: Props) {
     try {
       if (isLogin) {
         await signIn(email, password);
-        navigate("/dashboard");
+        // Navigation happens in the session effect above.
       } else {
-        const { session } = await signUp(email, password);
-        if (session) {
-          navigate("/dashboard");
-        } else {
+        const { session: newSession } = await signUp(email, password);
+        if (!newSession) {
           // Project requires email confirmation — no session yet.
           setNotice(
             "Account created. Check your inbox to confirm your email, then sign in.",
           );
         }
+        // If a session was returned, the session effect navigates.
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
