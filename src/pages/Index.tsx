@@ -559,7 +559,8 @@ const Index = () => {
     }
   }, [activeStep]);
 
-  const goApp = () => navigate("/app");
+  const goLogin = () => navigate("/login");
+  const goStart = () => navigate("/get-started");
   const step = HOW_STEPS[activeStep];
 
   return (
@@ -593,10 +594,10 @@ const Index = () => {
             ))}
           </div>
           <div className="nav-right">
-            <button className="login" onClick={goApp} type="button">
+            <button className="login" onClick={goLogin} type="button">
               Log in
             </button>
-            <button className="btn btn-primary" onClick={goApp} type="button">
+            <button className="btn btn-primary" onClick={goStart} type="button">
               Get started <i className="ti ti-arrow-right" />
             </button>
             <button
@@ -632,7 +633,7 @@ const Index = () => {
                 type="button"
                 onClick={() => {
                   setMenuOpen(false);
-                  goApp();
+                  goLogin();
                 }}
               >
                 Log in
@@ -642,7 +643,7 @@ const Index = () => {
                 type="button"
                 onClick={() => {
                   setMenuOpen(false);
-                  goApp();
+                  goStart();
                 }}
               >
                 Get started <i className="ti ti-arrow-right" />
@@ -669,7 +670,7 @@ const Index = () => {
               anything. Get cited answers instantly.
             </p>
             <div className="hero-actions">
-              <button className="btn btn-primary btn-lg" onClick={goApp} type="button">
+              <button className="btn btn-primary btn-lg" onClick={goStart} type="button">
                 Get started <i className="ti ti-arrow-right" />
               </button>
               <a className="btn btn-ghost btn-lg" href="#demo">
@@ -1006,7 +1007,7 @@ const Index = () => {
                 <button
                   type="button"
                   className={"btn tier-cta " + (tier.ghost ? "btn-ghost" : "btn-primary")}
-                  onClick={goApp}
+                  onClick={goStart}
                 >
                   {tier.cta}
                 </button>
@@ -1062,10 +1063,10 @@ const Index = () => {
             free.
           </p>
           <div className="cta-actions reveal">
-            <button className="btn btn-primary btn-lg" onClick={goApp} type="button">
+            <button className="btn btn-primary btn-lg" onClick={goStart} type="button">
               Get started <i className="ti ti-arrow-right" />
             </button>
-            <button className="btn btn-ghost btn-lg" onClick={goApp} type="button">
+            <button className="btn btn-ghost btn-lg" onClick={goStart} type="button">
               <i className="ti ti-calendar" /> Book a demo
             </button>
           </div>

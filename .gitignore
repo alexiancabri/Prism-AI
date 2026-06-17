@@ -25,3 +25,15 @@ dist-ssr
 
 # Claude Code local state
 .claude/
+
+# Environment / secrets (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+backend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/

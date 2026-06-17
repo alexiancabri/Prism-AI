@@ -1,0 +1,256 @@
+/* =========================================================================
+   PRISM AUTH — login / signup screens, matched to the landing aesthetic.
+   Reuses the landing's design tokens (declared on .prism-landing) so the
+   pure-black, single-blue-accent, mono-label look is identical. Scoped under
+   .prism-auth (which is applied alongside .prism-landing).
+   ========================================================================= */
+
+.prism-landing.prism-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px 20px;
+  position: relative;
+  overflow: hidden;
+  perspective: 1400px;
+}
+
+/* full-bleed refracting prism canvas, behind everything */
+.prism-landing .auth-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* faint prism-blue wash + vignette behind the card */
+.prism-landing.prism-auth::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(620px circle at 50% 40%, rgba(59, 130, 246, 0.08), transparent 70%),
+    radial-gradient(1200px circle at 50% 120%, rgba(167, 139, 250, 0.05), transparent 60%);
+  pointer-events: none;
+}
+
+/* ---- the card ----------------------------------------------------------- */
+.prism-landing .auth-card {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 430px;
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  background: rgba(8, 8, 11, 0.55);
+  border: 0.5px solid var(--hairline-strong);
+  box-shadow:
+    0 40px 120px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px) saturate(125%);
+  -webkit-backdrop-filter: blur(20px) saturate(125%);
+  transform-style: preserve-3d;
+  transition: transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+
+/* cursor spotlight inside the card */
+.prism-landing .auth-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    320px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(59, 130, 246, 0.16),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.prism-landing .auth-card:hover::after { opacity: 1; }
+
+/* chromatic refraction along the card edge, tracking the cursor on hover */
+.prism-landing .auth-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--ang, 0deg) at var(--mx, 50%) var(--my, 50%),
+    transparent 0deg,
+    rgba(59, 130, 246, 0.6) 40deg,
+    rgba(167, 139, 250, 0.5) 80deg,
+    rgba(52, 211, 153, 0.45) 120deg,
+    transparent 160deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.prism-landing .auth-card:hover::before { opacity: 0.95; }
+
+/* keep real content above the pseudo overlays */
+.prism-landing .auth-card > * { position: relative; z-index: 1; }
+
+.prism-landing .auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.6px;
+  margin-bottom: 26px;
+}
+.prism-landing .auth-brand svg { display: block; }
+
+.prism-landing .auth-eyebrow { margin-bottom: 22px; }
+
+.prism-landing .auth-title {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.08;
+  margin-bottom: 10px;
+}
+.prism-landing .auth-title .accent { color: var(--blue); }
+
+.prism-landing .auth-sub {
+  font-size: 14.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 28px;
+  max-width: 340px;
+}
+
+.prism-landing .auth-form { display: flex; flex-direction: column; gap: 16px; }
+
+.prism-landing .auth-field { display: flex; flex-direction: column; gap: 8px; }
+.prism-landing .auth-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  transition: color 0.25s ease;
+}
+
+/* input box hosts the light-sweep overlay */
+.prism-landing .auth-input-box { position: relative; border-radius: 10px; }
+.prism-landing .auth-input {
+  width: 100%;
+  background: rgba(5, 5, 7, 0.85);
+  border: 0.5px solid var(--hairline-strong);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text);
+  font-family: var(--sans);
+  transition: border-color 0.18s ease, box-shadow 0.25s ease;
+}
+.prism-landing .auth-input::placeholder { color: var(--text-faint); }
+.prism-landing .auth-input:focus {
+  outline: none;
+  border-color: var(--blue-dim);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+/* a field "lights up" once it's completed (valid + the user paused typing) */
+.prism-landing .auth-input-box.is-lit .auth-input {
+  border-color: var(--blue);
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.16),
+    0 0 26px rgba(59, 130, 246, 0.22);
+}
+.prism-landing .auth-field.lit .auth-label { color: var(--blue); }
+
+.prism-landing .auth-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+.prism-landing .auth-input-box.is-lit .auth-sweep { opacity: 1; }
+.prism-landing .auth-sweep::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 55%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(59, 130, 246, 0.55),
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  filter: blur(3px);
+}
+.prism-landing .auth-input-box.is-lit .auth-sweep::before {
+  animation: auth-sweep 0.75s ease-out;
+}
+@keyframes auth-sweep {
+  from { left: -60%; }
+  to { left: 120%; }
+}
+
+.prism-landing .auth-btn { width: 100%; justify-content: center; margin-top: 6px; }
+.prism-landing .btn:disabled { opacity: 0.55; cursor: default; transform: none !important; }
+
+/* both fields complete → the submit button charges up */
+.prism-landing .auth-card.charged .auth-btn {
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.5),
+    0 0 30px rgba(59, 130, 246, 0.35);
+}
+
+.prism-landing .auth-alert {
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.prism-landing .auth-alert.err {
+  background: rgba(239, 68, 68, 0.08);
+  border: 0.5px solid rgba(239, 68, 68, 0.32);
+  color: #fca5a5;
+}
+.prism-landing .auth-alert.ok {
+  background: rgba(34, 197, 94, 0.08);
+  border: 0.5px solid rgba(34, 197, 94, 0.32);
+  color: var(--teal);
+}
+
+.prism-landing .auth-foot {
+  margin-top: 26px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+.prism-landing .auth-foot a { color: var(--blue); font-weight: 600; }
+.prism-landing .auth-foot a:hover { color: var(--blue-strong); }
+
+@media (max-width: 480px) {
+  .prism-landing .auth-card { padding: 30px 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prism-landing .auth-card { transition: none; }
+  .prism-landing .auth-input-box.is-lit .auth-sweep::before { animation: none; }
+}
