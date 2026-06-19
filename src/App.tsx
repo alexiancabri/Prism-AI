@@ -17,6 +17,8 @@ const Value = lazy(() => import("./pages/Value"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
 const GetStarted = lazy(() => import("./pages/GetStarted"));
+// Experimental cinematic landing (local-only spike).
+const Cinematic = lazy(() => import("./pages/Cinematic"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Sources = lazy(() => import("./pages/Sources"));
 const ChatApp = lazy(() => import("./pages/ChatApp"));
@@ -37,6 +39,9 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/app" element={<Chat />} />
               <Route path="/roi" element={<Value />} />
+
+              {/* Experimental */}
+              <Route path="/cinematic" element={<Cinematic />} />
 
               {/* Auth + onboarding */}
               <Route path="/get-started" element={<GetStarted />} />
