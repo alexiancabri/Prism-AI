@@ -4,19 +4,25 @@ import {
   Trash2,
   UploadCloud,
   FileText,
-  FileType2,
   Loader2,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
 import AppLayout from "@/components/app/AppLayout";
+import {
+  GoogleDriveLogo,
+  NotionLogo,
+  SharePointLogo,
+  PdfLogo,
+  WordLogo,
+} from "@/components/app/BrandLogos";
 import { api, type DocumentRow } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 const COMING_SOON = [
-  { name: "Google Drive", color: "from-yellow-400 to-green-500" },
-  { name: "Notion", color: "from-neutral-500 to-neutral-700" },
-  { name: "SharePoint", color: "from-sky-500 to-blue-700" },
+  { name: "Google Drive", logo: GoogleDriveLogo },
+  { name: "Notion", logo: NotionLogo },
+  { name: "SharePoint", logo: SharePointLogo },
 ];
 
 function StatusBadge({ status }: { status: DocumentRow["status"] }) {
@@ -112,19 +118,14 @@ export default function Sources() {
         </header>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {COMING_SOON.map((s) => (
+          {COMING_SOON.map((s) => {
+            const Logo = s.logo;
+            return (
             <div
               key={s.name}
               className="rounded-xl border border-white/10 bg-white/[0.02] p-5 opacity-80"
             >
-              <div
-                className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br text-white",
-                  s.color,
-                )}
-              >
-                <span className="text-sm font-bold">{s.name.charAt(0)}</span>
-              </div>
+              <Logo />
               <h3 className="mt-3 font-medium text-neutral-100">{s.name}</h3>
               <p className="mt-1 text-sm text-neutral-500">
                 Sync documents automatically.
@@ -133,13 +134,12 @@ export default function Sources() {
                 Coming soon
               </span>
             </div>
-          ))}
+            );
+          })}
 
           {/* PDF Upload */}
           <button onClick={() => pick(".pdf")} className={liveCardCls}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-red-600 text-white">
-              <FileText className="h-5 w-5" />
-            </div>
+            <PdfLogo />
             <h3 className="mt-3 font-medium text-neutral-100">PDF Upload</h3>
             <p className="mt-1 text-sm text-neutral-500">Upload a .pdf to index it.</p>
             <span className="mt-4 inline-block rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
@@ -149,9 +149,7 @@ export default function Sources() {
 
           {/* Word Upload */}
           <button onClick={() => pick(".docx")} className={liveCardCls}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
-              <FileType2 className="h-5 w-5" />
-            </div>
+            <WordLogo />
             <h3 className="mt-3 font-medium text-neutral-100">Word Upload</h3>
             <p className="mt-1 text-sm text-neutral-500">Upload a .docx to index it.</p>
             <span className="mt-4 inline-block rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
