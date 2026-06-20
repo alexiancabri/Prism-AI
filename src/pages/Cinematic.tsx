@@ -472,7 +472,7 @@ export default function Cinematic() {
 
   useLayoutEffect(() => {
     if (!loaded) return;
-    const lenis = new Lenis({ duration: 1.1 });
+    const lenis = new Lenis({ duration: 0.85 });
     lenis.on("scroll", ScrollTrigger.update);
     const raf = (time: number) => lenis.raf(time * 1000);
     gsap.ticker.add(raf);
@@ -484,9 +484,9 @@ export default function Cinematic() {
         gsap.to(el, {
           opacity: 1,
           y: 0,
-          duration: 0.9,
+          duration: 0.55,
           ease: "power3.out",
-          scrollTrigger: { trigger: el, start: "top 84%" },
+          scrollTrigger: { trigger: el, start: "top 92%" },
         });
       });
 
@@ -496,9 +496,9 @@ export default function Cinematic() {
           scrollTrigger: {
             trigger: ".cine-hero",
             start: "top top",
-            end: "+=130%",
+            end: "+=85%",
             pin: true,
-            scrub: 0.4,
+            scrub: 0.3,
             onUpdate: (self) => {
               zoomRef.current = self.progress;
             },
@@ -514,9 +514,9 @@ export default function Cinematic() {
           scrollTrigger: {
             trigger: ".cine-problem",
             start: "top top",
-            end: "+=55%",
+            end: "+=38%",
             pin: true,
-            scrub: 0.5,
+            scrub: 0.4,
           },
         })
         .from(
@@ -541,9 +541,9 @@ export default function Cinematic() {
           scrollTrigger: {
             trigger: ".cine-horiz",
             start: "top top",
-            end: () => "+=" + (track.scrollWidth - window.innerWidth),
+            end: () => "+=" + (track.scrollWidth - window.innerWidth) * 0.7,
             pin: true,
-            scrub: 1,
+            scrub: 0.6,
             invalidateOnRefresh: true,
           },
         });
