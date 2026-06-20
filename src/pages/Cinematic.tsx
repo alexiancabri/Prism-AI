@@ -66,8 +66,8 @@ function TiltCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ---------- Rotating 3D triangular prism (canvas) ---------- */
-function HeroPrism() {
+/* ---------- Glistening 3D prism (canvas) — scroll-zooms into its core ---------- */
+function HeroPrism({ zoomRef }: { zoomRef: React.MutableRefObject<number> }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = ref.current;
@@ -88,13 +88,12 @@ function HeroPrism() {
     resize();
     window.addEventListener("resize", resize);
 
-    const r = 84;
-    const d = 132;
+    const r = 96;
+    const d = 150;
     const triPts: [number, number][] = [[0, -1], [-0.866, 0.55], [0.866, 0.55]];
     const verts: [number, number, number][] = [];
     for (const [x, y] of triPts) verts.push([x * r, y * r, d / 2]);
     for (const [x, y] of triPts) verts.push([x * r, y * r, -d / 2]);
-    // 2 triangle caps + 3 rectangular sides
     const faces = [
       [0, 1, 2],
       [3, 4, 5],
@@ -120,74 +119,108 @@ function HeroPrism() {
       return [x1, y1, z2];
     };
 
+    const sparks = Array.from({ length: 22 }, () => ({
+      a: Math.random() * Math.PI * 2,
+      rad: 70 + Math.random() * 150,
+      ph: Math.random() * Math.PI * 2,
+      sp: 0.4 + Math.random() * 1,
+    }));
+
     let t = 0;
     let raf = 0;
-    const focal = 480;
+    const focal = 560;
     const draw = () => {
       ctx.clearRect(0, 0, W, H);
-      const cx = W * 0.45;
+      const z = Math.max(0, Math.min(1, zoomRef.current));
+      const zoom = 1 + z * z * 9; // ease-in zoom toward the core
+      const fade = z < 0.72 ? 1 : Math.max(0, 1 - (z - 0.72) / 0.28);
+      const cx = W * 0.5;
       const cyc = H * 0.5;
+      ctx.globalAlpha = fade;
+
+      // gentle wobble (no full spin) so it glistens
+      const ay = 0.62 + Math.sin(t * 0.5) * 0.42;
+      const ax = -0.4 + Math.sin(t * 0.33) * 0.06;
       const P = verts.map((v) => {
-        const [x, y, z] = rot(v, t, -0.42);
-        const s = focal / (focal - z);
-        return [cx + x * s, cyc + y * s, z] as [number, number, number];
+        const [x, y, zz] = rot(v, ay, ax);
+        const s = focal / (focal - zz);
+        return [cx + x * s * zoom, cyc + y * s * zoom, zz] as [number, number, number];
       });
 
+      // ambient core glow
+      const glow = ctx.createRadialGradient(cx, cyc, 0, cx, cyc, 170 * zoom);
+      glow.addColorStop(0, "rgba(59,130,246,0.22)");
+      glow.addColorStop(1, "rgba(59,130,246,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, W, H);
+
       // incoming beam + dispersed rays
-      const ex0 = cx + 26;
-      const ey0 = cyc + 6;
       const pulse = 0.6 + 0.4 * Math.sin(t * 2.2);
       ctx.lineCap = "round";
-      ctx.strokeStyle = `rgba(255,255,255,${(0.65 * pulse).toFixed(2)})`;
+      ctx.strokeStyle = `rgba(255,255,255,${(0.55 * pulse * fade).toFixed(2)})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(0, cyc);
-      ctx.lineTo(ex0, ey0);
+      ctx.lineTo(cx, cyc);
       ctx.stroke();
       const rays: [string, number][] = [
-        ["#3b82f6", -26],
-        ["#22c55e", -9],
-        ["#a78bfa", 9],
-        ["#34d399", 26],
+        ["#3b82f6", -24],
+        ["#22c55e", -8],
+        ["#a78bfa", 8],
+        ["#34d399", 24],
       ];
       for (const [col, ang] of rays) {
         const a = (ang * Math.PI) / 180;
-        const ex = ex0 + Math.cos(a) * 300;
-        const ey = ey0 + Math.sin(a) * 300;
-        const g = ctx.createLinearGradient(ex0, ey0, ex, ey);
+        const len = (W * 0.55) * zoom;
+        const ex = cx + Math.cos(a) * len;
+        const ey = cyc + Math.sin(a) * len;
+        const g = ctx.createLinearGradient(cx, cyc, ex, ey);
         g.addColorStop(0, col);
         g.addColorStop(1, "rgba(0,0,0,0)");
         ctx.strokeStyle = g;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(ex0, ey0);
+        ctx.moveTo(cx, cyc);
         ctx.lineTo(ex, ey);
         ctx.stroke();
-        ctx.globalAlpha = 0.12;
-        ctx.lineWidth = 9;
+        ctx.globalAlpha = 0.12 * fade;
+        ctx.lineWidth = 10;
         ctx.strokeStyle = col;
         ctx.stroke();
-        ctx.globalAlpha = 1;
+        ctx.globalAlpha = fade;
       }
 
       // glass faces, painter-sorted far → near
       const order = faces
         .map((f) => ({ f, z: f.reduce((s, i) => s + P[i][2], 0) / f.length }))
         .sort((a, b) => a.z - b.z);
-      for (const { f, z } of order) {
+      const shimmer = 0.5 + 0.5 * Math.sin(t * 1.6);
+      for (const { f, z: fz } of order) {
         ctx.beginPath();
         ctx.moveTo(P[f[0]][0], P[f[0]][1]);
         for (let k = 1; k < f.length; k++) ctx.lineTo(P[f[k]][0], P[f[k]][1]);
         ctx.closePath();
-        ctx.fillStyle = `rgba(59,130,246,${(0.05 + 0.14 * ((z + d / 2) / d)).toFixed(3)})`;
+        ctx.fillStyle = `rgba(59,130,246,${(0.05 + 0.16 * ((fz + d / 2) / d)).toFixed(3)})`;
         ctx.fill();
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = "rgba(226,232,240,0.55)";
+        ctx.lineWidth = 1.1;
+        ctx.strokeStyle = `rgba(226,232,240,${(0.45 + 0.4 * shimmer).toFixed(2)})`;
         ctx.stroke();
       }
 
+      // glistening sparkles
+      for (const sp of sparks) {
+        const tw = 0.5 + 0.5 * Math.sin(t * sp.sp * 2 + sp.ph);
+        const px = cx + Math.cos(sp.a + t * 0.05) * sp.rad * zoom;
+        const py = cyc + Math.sin(sp.a + t * 0.05) * sp.rad * 0.66 * zoom;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.3 * tw + 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(205,225,255,${(0.55 * tw).toFixed(2)})`;
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1;
       if (!reduce) {
-        t += 0.006;
+        t += 0.012;
         raf = requestAnimationFrame(draw);
       }
     };
@@ -196,7 +229,7 @@ function HeroPrism() {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
     };
-  }, []);
+  }, [zoomRef]);
   return <canvas ref={ref} className="cine-canvas" aria-hidden="true" />;
 }
 
@@ -424,6 +457,7 @@ export default function Cinematic() {
   const navigate = useNavigate();
   const [loaded, setLoaded] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef(0); // hero "zoom into the prism" progress (0..1)
 
   // Randomized positions for the chaotic "problem" documents.
   const docs = useMemo(
@@ -455,6 +489,24 @@ export default function Cinematic() {
           scrollTrigger: { trigger: el, start: "top 84%" },
         });
       });
+
+      // Hero — pin, then zoom into the prism's core while text fades + flash
+      gsap
+        .timeline({
+          scrollTrigger: {
+            trigger: ".cine-hero",
+            start: "top top",
+            end: "+=130%",
+            pin: true,
+            scrub: 0.4,
+            onUpdate: (self) => {
+              zoomRef.current = self.progress;
+            },
+          },
+        })
+        .to(".cine-hero-text", { opacity: 0, y: -40, duration: 0.42 }, 0)
+        .to(".cine-flash", { opacity: 0.95, duration: 0.28 }, 0.64)
+        .to(".cine-flash", { opacity: 0, duration: 0.3 }, 0.9);
 
       // Problem — pin + chaos rain (front-loaded so it resolves early)
       gsap
@@ -507,13 +559,6 @@ export default function Cinematic() {
     };
   }, [loaded]);
 
-  const heroWords = [
-    { t: "One", a: false },
-    { t: "question.", a: false },
-    { t: "Every", a: true },
-    { t: "answer.", a: true },
-  ];
-
   return (
     <div className="cine" ref={rootRef}>
       <div className="cine-noise" />
@@ -524,8 +569,13 @@ export default function Cinematic() {
 
       {/* ============ HERO ============ */}
       <header className="cine-hero">
-        <div className="wrap cine-hero-grid">
-          <div>
+        <div className="cine-stage">
+          <HeroPrism zoomRef={zoomRef} />
+        </div>
+        <div className="cine-flash" aria-hidden="true" />
+
+        <div className="cine-hero-text">
+          <div className="htop">
             <motion.span
               className="cine-eyebrow"
               initial={{ opacity: 0, y: 12 }}
@@ -534,19 +584,25 @@ export default function Cinematic() {
             >
               <span className="dot" /> Refract your documents into clarity
             </motion.span>
-            <h1 className="cine-title">
-              {heroWords.map((w, i) => (
-                <motion.span
-                  key={i}
-                  className={"word" + (w.a ? " accent" : "")}
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={loaded ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: 0.25 + i * 0.18, duration: 0.7, ease: [0.22, 0.61, 0.36, 1] }}
-                >
-                  {w.t}
-                </motion.span>
-              ))}
-            </h1>
+            <motion.h1
+              className="cine-title"
+              initial={{ opacity: 0, y: 40 }}
+              animate={loaded ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.3, duration: 0.8, ease: [0.22, 0.61, 0.36, 1] }}
+            >
+              One question.
+            </motion.h1>
+          </div>
+
+          <div className="hbot">
+            <motion.h1
+              className="cine-title accent"
+              initial={{ opacity: 0, y: 40 }}
+              animate={loaded ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.75, duration: 0.8, ease: [0.22, 0.61, 0.36, 1] }}
+            >
+              Every answer.
+            </motion.h1>
             <motion.p
               className="cine-sub"
               initial={{ opacity: 0 }}
@@ -560,7 +616,7 @@ export default function Cinematic() {
               className="cine-hero-actions"
               initial={{ opacity: 0, y: 16 }}
               animate={loaded ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 1.45 }}
+              transition={{ delay: 1.4 }}
             >
               <Magnetic className="cine-btn primary" onClick={() => navigate("/get-started")}>
                 Get started <ArrowRight size={17} />
@@ -569,10 +625,14 @@ export default function Cinematic() {
                 Log in
               </Magnetic>
             </motion.div>
-          </div>
-
-          <div className="cine-stage">
-            <HeroPrism />
+            <motion.div
+              className="cine-scrollhint"
+              initial={{ opacity: 0 }}
+              animate={loaded ? { opacity: 1 } : {}}
+              transition={{ delay: 1.8 }}
+            >
+              Scroll to enter the prism
+            </motion.div>
           </div>
         </div>
       </header>
@@ -666,25 +726,54 @@ export default function Cinematic() {
         </div>
 
         <div className="cine-map-wrap cine-reveal">
-          <svg width="420" height="260" viewBox="0 0 420 260">
+          <svg width="480" height="300" viewBox="0 0 940 560" aria-hidden="true">
+            <defs>
+              <radialGradient id="beaconGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="rgba(120,190,255,0.9)" />
+                <stop offset="40%" stopColor="rgba(59,130,246,0.35)" />
+                <stop offset="100%" stopColor="rgba(59,130,246,0)" />
+              </radialGradient>
+              <linearGradient id="beamGrad" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stopColor="rgba(120,190,255,0.85)" />
+                <stop offset="100%" stopColor="rgba(120,190,255,0)" />
+              </linearGradient>
+            </defs>
+
+            {/* Switzerland silhouette (stylized) */}
             <path
-              d="M40 150 C60 110 110 96 150 104 C180 80 230 78 262 96 C300 86 350 104 372 132 C390 152 372 186 338 196 C320 220 270 224 240 206 C210 224 160 222 132 200 C96 206 52 186 40 150 Z"
-              fill="rgba(59,130,246,0.05)"
-              stroke="#2a2a30"
-              strokeWidth="1"
+              d="M60 430 L96 360 L150 300 L214 256 L300 218 L388 202 L470 196
+                 L520 168 L556 200 L644 206 L706 236 L766 250 L862 286 L890 332
+                 L842 360 L772 376 L724 420 L692 504 L652 410 L560 442 L470 446
+                 L410 472 L330 456 L250 462 L160 442 L96 452 Z"
+              fill="rgba(59,130,246,0.04)"
+              stroke="#2c2c33"
+              strokeWidth="1.4"
+              strokeLinejoin="round"
             />
-            {/* Geneva */}
-            <circle className="cine-pin-glow" cx="120" cy="190" r="4" fill="#3b82f6" />
-            <circle className="cine-pin" cx="120" cy="190" r="4" />
-            <text className="cine-pin-label" x="100" y="214">
-              Geneva
-            </text>
-            {/* Zurich */}
-            <circle className="cine-pin-glow" cx="270" cy="130" r="4" fill="#3b82f6" />
-            <circle className="cine-pin" cx="270" cy="130" r="4" />
-            <text className="cine-pin-label" x="252" y="118">
-              Zurich
-            </text>
+
+            {/* Geneva beacon (south-west) */}
+            <g transform="translate(108,416)">
+              <circle r="40" fill="url(#beaconGlow)" />
+              <line className="cine-beam" x1="0" y1="-8" x2="0" y2="-58" />
+              <circle className="cine-ring" r="5" />
+              <circle className="cine-ring d2" r="5" />
+              <circle className="cine-core" r="4" />
+              <text className="cine-pin-label" x="0" y="26" textAnchor="middle">
+                Geneva
+              </text>
+            </g>
+
+            {/* Zurich beacon (north-central) */}
+            <g transform="translate(560,250)">
+              <circle r="40" fill="url(#beaconGlow)" />
+              <line className="cine-beam" x1="0" y1="-8" x2="0" y2="-58" />
+              <circle className="cine-ring" r="5" />
+              <circle className="cine-ring d2" r="5" />
+              <circle className="cine-core" r="4" />
+              <text className="cine-pin-label" x="0" y="-22" textAnchor="middle">
+                Zurich
+              </text>
+            </g>
           </svg>
         </div>
       </section>
