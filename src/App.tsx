@@ -17,7 +17,7 @@ const Value = lazy(() => import("./pages/Value"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
 const GetStarted = lazy(() => import("./pages/GetStarted"));
-// Experimental cinematic landing (local-only spike).
+// Cinematic landing — now the main landing at "/".
 const Cinematic = lazy(() => import("./pages/Cinematic"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Sources = lazy(() => import("./pages/Sources"));
@@ -36,12 +36,11 @@ const App = () => (
           <Suspense fallback={<div className="min-h-screen bg-background" />}>
             <Routes>
               {/* Marketing */}
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Cinematic />} />
+              <Route path="/cinematic" element={<Cinematic />} />
+              <Route path="/classic" element={<Index />} />
               <Route path="/app" element={<Chat />} />
               <Route path="/roi" element={<Value />} />
-
-              {/* Experimental */}
-              <Route path="/cinematic" element={<Cinematic />} />
 
               {/* Auth + onboarding */}
               <Route path="/get-started" element={<GetStarted />} />
