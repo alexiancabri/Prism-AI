@@ -66,6 +66,140 @@ function TiltCard({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ---------- Rotating 3D triangular prism (canvas) ---------- */
+function HeroPrism() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let W = 0;
+    let H = 0;
+    const resize = () => {
+      W = canvas.clientWidth;
+      H = canvas.clientHeight;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const r = 84;
+    const d = 132;
+    const triPts: [number, number][] = [[0, -1], [-0.866, 0.55], [0.866, 0.55]];
+    const verts: [number, number, number][] = [];
+    for (const [x, y] of triPts) verts.push([x * r, y * r, d / 2]);
+    for (const [x, y] of triPts) verts.push([x * r, y * r, -d / 2]);
+    // 2 triangle caps + 3 rectangular sides
+    const faces = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [0, 1, 4, 3],
+      [1, 2, 5, 4],
+      [2, 0, 3, 5],
+    ];
+
+    const rot = (
+      p: [number, number, number],
+      ay: number,
+      ax: number,
+    ): [number, number, number] => {
+      const [x, y, z] = p;
+      const cy = Math.cos(ay);
+      const sy = Math.sin(ay);
+      const x1 = x * cy + z * sy;
+      const z1 = -x * sy + z * cy;
+      const cx = Math.cos(ax);
+      const sx = Math.sin(ax);
+      const y1 = y * cx - z1 * sx;
+      const z2 = y * sx + z1 * cx;
+      return [x1, y1, z2];
+    };
+
+    let t = 0;
+    let raf = 0;
+    const focal = 480;
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      const cx = W * 0.45;
+      const cyc = H * 0.5;
+      const P = verts.map((v) => {
+        const [x, y, z] = rot(v, t, -0.42);
+        const s = focal / (focal - z);
+        return [cx + x * s, cyc + y * s, z] as [number, number, number];
+      });
+
+      // incoming beam + dispersed rays
+      const ex0 = cx + 26;
+      const ey0 = cyc + 6;
+      const pulse = 0.6 + 0.4 * Math.sin(t * 2.2);
+      ctx.lineCap = "round";
+      ctx.strokeStyle = `rgba(255,255,255,${(0.65 * pulse).toFixed(2)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, cyc);
+      ctx.lineTo(ex0, ey0);
+      ctx.stroke();
+      const rays: [string, number][] = [
+        ["#3b82f6", -26],
+        ["#22c55e", -9],
+        ["#a78bfa", 9],
+        ["#34d399", 26],
+      ];
+      for (const [col, ang] of rays) {
+        const a = (ang * Math.PI) / 180;
+        const ex = ex0 + Math.cos(a) * 300;
+        const ey = ey0 + Math.sin(a) * 300;
+        const g = ctx.createLinearGradient(ex0, ey0, ex, ey);
+        g.addColorStop(0, col);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(ex0, ey0);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        ctx.globalAlpha = 0.12;
+        ctx.lineWidth = 9;
+        ctx.strokeStyle = col;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      // glass faces, painter-sorted far → near
+      const order = faces
+        .map((f) => ({ f, z: f.reduce((s, i) => s + P[i][2], 0) / f.length }))
+        .sort((a, b) => a.z - b.z);
+      for (const { f, z } of order) {
+        ctx.beginPath();
+        ctx.moveTo(P[f[0]][0], P[f[0]][1]);
+        for (let k = 1; k < f.length; k++) ctx.lineTo(P[f[k]][0], P[f[k]][1]);
+        ctx.closePath();
+        ctx.fillStyle = `rgba(59,130,246,${(0.05 + 0.14 * ((z + d / 2) / d)).toFixed(3)})`;
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(226,232,240,0.55)";
+        ctx.stroke();
+      }
+
+      if (!reduce) {
+        t += 0.006;
+        raf = requestAnimationFrame(draw);
+      }
+    };
+    draw();
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+  return <canvas ref={ref} className="cine-canvas" aria-hidden="true" />;
+}
+
 /* ---------- Loader ---------- */
 function Loader({ onDone }: { onDone: () => void }) {
   const [pct, setPct] = useState(0);
@@ -322,23 +456,29 @@ export default function Cinematic() {
         });
       });
 
-      // Problem — pin + chaos rain
+      // Problem — pin + chaos rain (front-loaded so it resolves early)
       gsap
         .timeline({
           scrollTrigger: {
             trigger: ".cine-problem",
             start: "top top",
-            end: "+=110%",
+            end: "+=55%",
             pin: true,
-            scrub: 1,
+            scrub: 0.5,
           },
         })
         .from(
           ".cine-chaos .cine-doc",
-          { y: -280, opacity: 0, rotate: () => gsap.utils.random(-40, 40), stagger: 0.05 },
+          {
+            y: -260,
+            opacity: 0,
+            rotate: () => gsap.utils.random(-40, 40),
+            stagger: 0.025,
+            duration: 0.4,
+          },
           0,
         )
-        .from(".cine-answer", { opacity: 0, x: 50 }, 0.25);
+        .from(".cine-answer", { opacity: 0, x: 50, duration: 0.35 }, 0.25);
 
       // How it works — horizontal scroll
       const track = document.querySelector<HTMLElement>(".cine-track");
@@ -432,26 +572,7 @@ export default function Cinematic() {
           </div>
 
           <div className="cine-stage">
-            <div className="cine-rays">
-              {[["#3b82f6", -28], ["#22c55e", -10], ["#a78bfa", 12], ["#34d399", 30]].map(
-                ([c, a], i) => (
-                  <div
-                    key={i}
-                    className="cine-ray"
-                    style={{
-                      transform: `rotate(${a}deg)`,
-                      background: `linear-gradient(90deg, ${c}, transparent)`,
-                      boxShadow: `0 0 18px ${c}`,
-                    }}
-                  />
-                ),
-              )}
-            </div>
-            <div className="cine-prism">
-              <div className="cine-face" style={{ transform: "translateZ(40px)" }} />
-              <div className="cine-face" style={{ transform: "rotateY(120deg) translateZ(40px)" }} />
-              <div className="cine-face" style={{ transform: "rotateY(240deg) translateZ(40px)" }} />
-            </div>
+            <HeroPrism />
           </div>
         </div>
       </header>

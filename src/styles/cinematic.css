@@ -133,51 +133,12 @@
 }
 .cine-hero-actions { display: flex; gap: 14px; }
 
-/* ---- 3D CSS prism ---- */
+/* ---- 3D prism (canvas) ---- */
 .cine-stage {
   position: relative;
-  height: 460px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  perspective: 1200px;
+  height: 480px;
 }
-.cine-rays {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-.cine-ray {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  height: 2px;
-  width: 320px;
-  transform-origin: 0 50%;
-  filter: blur(0.4px);
-}
-.cine-prism {
-  position: relative;
-  width: 180px;
-  height: 180px;
-  transform-style: preserve-3d;
-  animation: cine-spin 16s linear infinite;
-}
-@keyframes cine-spin {
-  from { transform: rotateX(-18deg) rotateY(0deg); }
-  to { transform: rotateX(-18deg) rotateY(360deg); }
-}
-.cine-face {
-  position: absolute;
-  inset: 0;
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  background: linear-gradient(160deg, rgba(59, 130, 246, 0.22), rgba(167, 139, 250, 0.1));
-  border: 1px solid rgba(226, 232, 240, 0.55);
-  backface-visibility: visible;
-}
+.cine-canvas { display: block; width: 100%; height: 100%; }
 
 /* ============ SECTION SHELL ============ */
 .cine-section { position: relative; padding: 120px 0; }
@@ -308,16 +269,23 @@
 
 /* ============ HOW IT WORKS (horizontal) ============ */
 .cine-horiz { position: relative; height: 100vh; overflow: hidden; }
-.cine-track { display: flex; height: 100%; align-items: center; will-change: transform; }
+.cine-track {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  /* lead/trail padding centers the first & last card */
+  padding: 0 max(24px, calc((100vw - 600px) / 2));
+  will-change: transform;
+}
 .cine-panel {
-  flex: 0 0 100vw;
+  flex: 0 0 min(600px, 90vw);
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .cine-3dcard {
-  width: min(560px, 86vw);
+  width: min(480px, 84vw);
   border-radius: 20px;
   background: var(--card);
   border: 0.5px solid var(--line-2);
