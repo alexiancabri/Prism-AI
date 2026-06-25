@@ -1,33 +1,52 @@
-"""Embeddings via OpenAI text-embedding-3-small (natively 1536-dim).
+"""Embeddings via Voyage AI (voyage-3.5, 1024-dim by default).
 
 Anthropic has no embeddings endpoint, so Claude handles answering only — the
-vectors that go into pgvector come from OpenAI.
+vectors that go into pgvector come from Voyage AI, Anthropic's recommended
+embeddings partner. Voyage distinguishes between indexing documents and
+embedding search queries (`input_type`), which improves retrieval quality.
 """
 from functools import lru_cache
 
-from openai import OpenAI
+import voyageai
 
 from . import config
 
+# Voyage caps a single request at 1000 inputs (and a per-request token budget);
+# batch comfortably under that so large documents index in one pass.
+_BATCH = 128
+
 
 @lru_cache(maxsize=1)
-def _client() -> OpenAI:
-    if not config.OPENAI_API_KEY:
-        raise RuntimeError("OPENAI_API_KEY must be set in the environment.")
-    return OpenAI(api_key=config.OPENAI_API_KEY)
+def _client() -> "voyageai.Client":
+    if not config.VOYAGE_API_KEY:
+        raise RuntimeError("VOYAGE_API_KEY must be set in the environment.")
+    return voyageai.Client(api_key=config.VOYAGE_API_KEY)
+
+
+def _embed(texts: list[str], input_type: str) -> list[list[float]]:
+    vectors: list[list[float]] = []
+    for i in range(0, len(texts), _BATCH):
+        batch = texts[i : i + _BATCH]
+        resp = _client().embed(
+            batch,
+            model=config.EMBED_MODEL,
+            input_type=input_type,
+            output_dimension=config.EMBED_DIM,
+        )
+        vectors.extend(resp.embeddings)
+    return vectors
 
 
 def embed_texts(texts: list[str]) -> list[list[float]]:
-    """Embed a batch of strings. Returns one 1536-float vector per input."""
+    """Embed stored document chunks. One EMBED_DIM-float vector per input."""
     if not texts:
         return []
-    resp = _client().embeddings.create(model=config.EMBED_MODEL, input=texts)
-    # The API preserves input order.
-    return [d.embedding for d in resp.data]
+    return _embed(texts, input_type="document")
 
 
 def embed_query(text: str) -> list[float]:
-    return embed_texts([text])[0]
+    """Embed a search query (uses Voyage's query-optimized input type)."""
+    return _embed([text], input_type="query")[0]
 
 
 def to_pgvector(vec: list[float]) -> str:

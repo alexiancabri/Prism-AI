@@ -13,14 +13,15 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
 # --- Model providers --------------------------------------------------------
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+VOYAGE_API_KEY = os.environ.get("VOYAGE_API_KEY", "")
 
-# Claude does the answering; OpenAI does the embeddings (Anthropic has no
-# embeddings endpoint, and text-embedding-3-small is natively 1536-dim, which
-# matches the pgvector schema).
+# Claude does the answering; Voyage AI (Anthropic's recommended embeddings
+# partner) does the embeddings — Anthropic has no embeddings endpoint of its
+# own. voyage-3.5 outputs 1024-dim vectors by default, which must match the
+# pgvector schema (see schema.sql).
 ANSWER_MODEL = os.environ.get("ANSWER_MODEL", "claude-opus-4-8")
-EMBED_MODEL = os.environ.get("EMBED_MODEL", "text-embedding-3-small")
-EMBED_DIM = 1536
+EMBED_MODEL = os.environ.get("EMBED_MODEL", "voyage-3.5")
+EMBED_DIM = int(os.environ.get("EMBED_DIM", "1024"))
 
 # --- CORS -------------------------------------------------------------------
 # Comma-separated list is supported so you can allow localhost + the deployed UI.

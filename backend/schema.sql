@@ -38,7 +38,7 @@ create table if not exists chunks (
   org_id uuid references orgs(id),
   content text,
   location text,
-  embedding vector(1536),
+  embedding vector(1024),
   created_at timestamptz default now()
 );
 
@@ -75,7 +75,7 @@ create index if not exists idx_chunks_embedding
 -- Similarity search RPC — org-scoped top-k by cosine distance.
 -- ---------------------------------------------------------------------------
 create or replace function match_chunks(
-  query_embedding vector(1536),
+  query_embedding vector(1024),
   match_org uuid,
   match_count int default 5
 )

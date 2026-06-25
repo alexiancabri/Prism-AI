@@ -8,12 +8,13 @@ content of the uploaded documents.
 
 - **FastAPI** — HTTP API
 - **Supabase (Postgres + pgvector)** — auth, storage, vector search
-- **OpenAI** `text-embedding-3-small` (1536-dim) — embeddings
+- **Voyage AI** `voyage-3.5` (1024-dim) — embeddings
 - **Anthropic Claude** (`claude-opus-4-8`) — grounded answering with citations
 
-> Anthropic has no embeddings endpoint, so OpenAI does the embedding and Claude
-> does the answering. `text-embedding-3-small` is natively 1536-dim, matching
-> the `vector(1536)` schema exactly.
+> Anthropic has no embeddings endpoint, so Voyage AI (Anthropic's recommended
+> embeddings partner) does the embedding and Claude does the answering.
+> `voyage-3.5` outputs 1024-dim vectors by default, matching the `vector(1024)`
+> schema exactly.
 
 ## Setup
 
@@ -23,7 +24,7 @@ content of the uploaded documents.
 
 2. **Configure env.** Copy `.env.example` → `.env` and fill it in (these are the
    vars already set in Railway). Required: `SUPABASE_URL`,
-   `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`,
    `FRONTEND_URL`.
 
 3. **Install + run.**
