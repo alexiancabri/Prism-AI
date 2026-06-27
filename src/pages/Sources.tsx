@@ -72,6 +72,8 @@ export default function Sources() {
   const [accept, setAccept] = useState(".pdf,.docx");
   const [dragging, setDragging] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  // Documents currently fading out — lets the row animate before it's removed.
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
 
   const { data: documents = [] } = useQuery({
     queryKey: ["documents"],
@@ -97,9 +99,31 @@ export default function Sources() {
     requestAnimationFrame(() => inputRef.current?.click());
   }
 
-  async function handleDelete(id: string) {
-    await api.deleteDocument(id);
-    queryClient.invalidateQueries({ queryKey: ["documents"] });
+  function handleDelete(id: string) {
+    if (removingIds.has(id)) return;
+    // Instant feedback: start the fade-out and delete on the server in the
+    // background, then drop the row from the list once the animation finishes.
+    setUploadError(null);
+    setRemovingIds((prev) => new Set(prev).add(id));
+    const deletion = api.deleteDocument(id);
+    window.setTimeout(async () => {
+      try {
+        await deletion;
+        queryClient.setQueryData<DocumentRow[]>(["documents"], (old) =>
+          (old ?? []).filter((d) => d.id !== id),
+        );
+      } catch (err) {
+        // Restore the row from the server and surface the error.
+        setUploadError(err instanceof Error ? err.message : "Delete failed.");
+        queryClient.invalidateQueries({ queryKey: ["documents"] });
+      } finally {
+        setRemovingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    }, 220);
   }
 
   const liveCardCls =
@@ -220,8 +244,16 @@ export default function Sources() {
             </p>
           ) : (
             <ul className="divide-y divide-white/5">
-              {documents.map((doc) => (
-                <li key={doc.id} className="flex items-center gap-4 px-5 py-3.5">
+              {documents.map((doc) => {
+                const removing = removingIds.has(doc.id);
+                return (
+                <li
+                  key={doc.id}
+                  className={cn(
+                    "flex items-center gap-4 px-5 py-3.5 transition-all duration-200 ease-out",
+                    removing && "-translate-x-3 scale-[0.98] opacity-0",
+                  )}
+                >
                   <FileText className="h-5 w-5 shrink-0 text-neutral-500" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-neutral-100">
@@ -243,13 +275,15 @@ export default function Sources() {
                   <StatusBadge status={doc.status} />
                   <button
                     onClick={() => handleDelete(doc.id)}
+                    disabled={removing}
                     title="Delete"
-                    className="rounded-md p-2 text-neutral-500 hover:bg-red-500/10 hover:text-red-400"
+                    className="rounded-md p-2 text-neutral-500 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:pointer-events-none"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </section>
