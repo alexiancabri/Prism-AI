@@ -142,6 +142,39 @@ function DocumentPreview({
       ?.scrollIntoView({ block: "center", behavior: "smooth" });
   }
 
+  /** Open the original file in a new tab. For PDFs we fetch the bytes and open
+   *  them as an application/pdf blob (jumping to the cited page) — a raw signed
+   *  URL often downloads or opens blank instead of rendering inline. The tab is
+   *  opened synchronously first so it isn't caught by the popup blocker. */
+  async function openOriginal() {
+    if (!fileData?.url) return;
+    if (!isPdf) {
+      window.open(fileData.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const tab = window.open("about:blank", "_blank");
+    if (tab) tab.opener = null;
+    try {
+      const blob = await fetch(fileData.url).then((r) => {
+        if (!r.ok) throw new Error("fetch failed");
+        return r.blob();
+      });
+      const pdfBlob =
+        blob.type === "application/pdf"
+          ? blob
+          : new Blob([blob], { type: "application/pdf" });
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const target = page > 1 ? `${blobUrl}#page=${page}` : blobUrl;
+      if (tab) tab.location.href = target;
+      else window.open(target, "_blank");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch {
+      // Fall back to the signed URL if the fetch is blocked for any reason.
+      if (tab) tab.location.href = fileData.url;
+      else window.open(fileData.url, "_blank", "noopener,noreferrer");
+    }
+  }
+
   return (
     <div
       style={{ width }}
@@ -174,15 +207,13 @@ function DocumentPreview({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {hasFile && (
-            <a
-              href={fileData!.url}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={openOriginal}
               title="Open original document"
               className="rounded-md p-1.5 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
             >
               <ExternalLink className="h-4 w-4" />
-            </a>
+            </button>
           )}
           <button
             onClick={toggleExpand}
