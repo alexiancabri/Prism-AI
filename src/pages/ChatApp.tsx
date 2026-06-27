@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Document, Page } from "react-pdf";
 import {
   Plus,
   Send,
@@ -9,7 +10,8 @@ import {
   MessagesSquare,
 } from "lucide-react";
 import AppLayout from "@/components/app/AppLayout";
-import { api, type Citation, type Message } from "@/lib/api";
+import { api, type Citation, type Message, type DocumentDetail } from "@/lib/api";
+import { makeHighlighter, pageFromLocation } from "@/lib/pdf";
 import { cn } from "@/lib/utils";
 
 /** Wrap the exact quoted substring in a blue highlight. */
@@ -29,7 +31,9 @@ function Highlighted({ content, quote }: { content: string; quote: string }) {
   );
 }
 
-/** Right-hand document preview that highlights the cited chunk + quote. */
+/** Right-hand document preview: renders the real PDF with the cited region
+ *  highlighted; falls back to extracted-text chunks for non-PDF documents or
+ *  ones uploaded before the original file was stored. */
 function DocumentPreview({
   citation,
   onClose,
@@ -42,8 +46,36 @@ function DocumentPreview({
     queryFn: () => api.getDocument(citation.document_id),
   });
 
+  const { data: fileData } = useQuery({
+    queryKey: ["document-file", citation.document_id],
+    queryFn: () => api.getDocumentFile(citation.document_id),
+    retry: false,
+  });
+
+  const [pdfError, setPdfError] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  // Reset the PDF-failure state when the citation points at a new document.
+  useEffect(() => setPdfError(false), [citation.document_id]);
+
+  const isPdf =
+    citation.document_name.toLowerCase().endsWith(".pdf") &&
+    !!fileData?.url &&
+    !pdfError;
+  const page = pageFromLocation(citation.location);
+  const renderHighlight = useMemo(
+    () => makeHighlighter(citation.text),
+    [citation.text],
+  );
+
+  function scrollToHighlight() {
+    bodyRef.current
+      ?.querySelector("mark.pdf-hl")
+      ?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+
   return (
-    <div className="flex h-full w-[420px] shrink-0 flex-col border-l border-white/10 bg-black/40">
+    <div className="flex h-full w-[440px] shrink-0 flex-col border-l border-white/10 bg-black/40">
       <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <div className="flex min-w-0 items-center gap-2">
           <FileText className="h-4 w-4 shrink-0 text-neutral-500" />
@@ -59,37 +91,85 @@ function DocumentPreview({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        {isLoading && (
-          <div className="flex items-center gap-2 text-sm text-neutral-500">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading document…
-          </div>
+      <div
+        ref={bodyRef}
+        className={cn(
+          "flex-1 overflow-auto",
+          isPdf ? "bg-neutral-900/50 px-4 py-4" : "px-5 py-4",
         )}
-        {data?.chunks.map((chunk) => {
-          const isCited = chunk.id === citation.chunk_id;
-          return (
-            <div
-              key={chunk.id}
-              className={cn(
-                "mb-3 rounded-lg border p-3 text-sm leading-relaxed",
-                isCited
-                  ? "border-[#3b82f6]/30 bg-[#3b82f6]/[0.06] text-neutral-200"
-                  : "border-transparent text-neutral-500",
-              )}
-            >
-              <div className="app-mono mb-1 text-[10px] uppercase tracking-wider text-neutral-600">
-                {chunk.location}
+      >
+        {isPdf ? (
+          <Document
+            file={fileData!.url}
+            onLoadError={() => setPdfError(true)}
+            loading={
+              <div className="flex items-center gap-2 py-6 text-sm text-neutral-500">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading PDF…
               </div>
-              {isCited ? (
-                <Highlighted content={chunk.content} quote={citation.text} />
-              ) : (
-                <span>{chunk.content}</span>
-              )}
-            </div>
-          );
-        })}
+            }
+            className="flex justify-center"
+          >
+            <Page
+              pageNumber={page}
+              width={400}
+              customTextRenderer={renderHighlight}
+              onRenderTextLayerSuccess={scrollToHighlight}
+              renderAnnotationLayer={false}
+            />
+          </Document>
+        ) : (
+          <DocumentTextView
+            data={data}
+            isLoading={isLoading}
+            citation={citation}
+          />
+        )}
       </div>
     </div>
+  );
+}
+
+/** Fallback: the extracted-text chunk list with the cited quote highlighted. */
+function DocumentTextView({
+  data,
+  isLoading,
+  citation,
+}: {
+  data: DocumentDetail | undefined;
+  isLoading: boolean;
+  citation: Citation;
+}) {
+  return (
+    <>
+      {isLoading && (
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading document…
+        </div>
+      )}
+      {data?.chunks.map((chunk) => {
+        const isCited = chunk.id === citation.chunk_id;
+        return (
+          <div
+            key={chunk.id}
+            className={cn(
+              "mb-3 rounded-lg border p-3 text-sm leading-relaxed",
+              isCited
+                ? "border-[#3b82f6]/30 bg-[#3b82f6]/[0.06] text-neutral-200"
+                : "border-transparent text-neutral-500",
+            )}
+          >
+            <div className="app-mono mb-1 text-[10px] uppercase tracking-wider text-neutral-600">
+              {chunk.location}
+            </div>
+            {isCited ? (
+              <Highlighted content={chunk.content} quote={citation.text} />
+            ) : (
+              <span>{chunk.content}</span>
+            )}
+          </div>
+        );
+      })}
+    </>
   );
 }
 

@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* PDF citation highlight — the pdf.js text layer overlays invisible selectable
+   text on the canvas, so a tinted background on the cited words shows as a
+   highlight box over the rendered page. */
+.react-pdf__Page__textContent mark.pdf-hl {
+  background-color: rgba(59, 130, 246, 0.45);
+  color: transparent;
+  border-radius: 2px;
+  padding: 0;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.55);
+}
+.react-pdf__Page {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
 /* =========================================================================
    PRISM — Design System
    Clean, precise, light. A document intelligence product.

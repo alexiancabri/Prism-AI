@@ -9,6 +9,7 @@ import traceback
 
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 
+from .. import config
 from ..auth import CurrentUser, User
 from ..chunking import chunk_document
 from ..db import get_supabase
@@ -17,6 +18,36 @@ from ..embeddings import embed_texts, to_pgvector
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 ALLOWED_EXT = (".pdf", ".docx")
+STORAGE_BUCKET = "documents"
+
+
+def _pdf_storage_path(org_id: str, document_id: str) -> str:
+    return f"{org_id}/{document_id}.pdf"
+
+
+def _ensure_bucket(sb) -> None:
+    try:
+        sb.storage.get_bucket(STORAGE_BUCKET)
+    except Exception:  # noqa: BLE001 — bucket missing; create it (private)
+        try:
+            sb.storage.create_bucket(STORAGE_BUCKET)
+        except Exception:  # noqa: BLE001 — race/already-exists; ignore
+            pass
+
+
+def _store_pdf(sb, org_id: str, document_id: str, data: bytes) -> None:
+    """Best-effort: keep the original PDF so the UI can render it with the
+    cited region highlighted. A failure here must never break indexing — the
+    preview falls back to extracted text when no file is available."""
+    try:
+        _ensure_bucket(sb)
+        sb.storage.from_(STORAGE_BUCKET).upload(
+            _pdf_storage_path(org_id, document_id),
+            data,
+            {"content-type": "application/pdf", "upsert": "true"},
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"[upload] PDF storage failed for {document_id}: {exc}")
 
 
 def _mark_failed(sb, document_id: str, reason: str) -> None:
@@ -94,6 +125,9 @@ async def upload_document(
     )
     document = doc.data[0]
 
+    if filename.lower().endswith(".pdf"):
+        _store_pdf(sb, user.org_id, document["id"], data)
+
     background_tasks.add_task(
         _index_document, document["id"], user.org_id, filename, data
     )
@@ -138,6 +172,41 @@ def get_document(document_id: str, user: User = CurrentUser):
     return {**doc.data[0], "chunks": chunks.data}
 
 
+@router.get("/{document_id}/file")
+def get_document_file(document_id: str, user: User = CurrentUser):
+    """Signed URL to the original PDF so the browser can render it (PDFs only).
+
+    Returns 404 when the document isn't a PDF or predates PDF storage — the UI
+    then falls back to the extracted-text preview.
+    """
+    sb = get_supabase()
+    doc = (
+        sb.table("documents")
+        .select("name")
+        .eq("id", document_id)
+        .eq("org_id", user.org_id)
+        .execute()
+    )
+    if not doc.data:
+        raise HTTPException(404, "Document not found.")
+    if not (doc.data[0]["name"] or "").lower().endswith(".pdf"):
+        raise HTTPException(404, "No PDF preview available for this document.")
+
+    try:
+        res = sb.storage.from_(STORAGE_BUCKET).create_signed_url(
+            _pdf_storage_path(user.org_id, document_id), 3600
+        )
+    except Exception as exc:  # noqa: BLE001 — file may predate PDF storage
+        raise HTTPException(404, "PDF file not available.") from exc
+
+    url = res.get("signedURL") or res.get("signedUrl") or res.get("signed_url")
+    if not url:
+        raise HTTPException(404, "PDF file not available.")
+    if url.startswith("/"):
+        url = config.SUPABASE_URL.rstrip("/") + url
+    return {"url": url}
+
+
 @router.delete("/{document_id}")
 def delete_document(document_id: str, user: User = CurrentUser):
     sb = get_supabase()
@@ -157,4 +226,10 @@ def delete_document(document_id: str, user: User = CurrentUser):
     sb.table("documents").delete().eq("id", document_id).eq(
         "org_id", user.org_id
     ).execute()
+    try:  # remove the stored PDF too; ignore if it never existed
+        sb.storage.from_(STORAGE_BUCKET).remove(
+            [_pdf_storage_path(user.org_id, document_id)]
+        )
+    except Exception:  # noqa: BLE001
+        pass
     return {"deleted": document_id}
