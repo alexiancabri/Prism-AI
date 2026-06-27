@@ -133,8 +133,11 @@ export default function ChatApp() {
     setInput("");
     setPending({ question });
 
+    // Track the conversation id outside the try so the catch can attach an
+    // error message even when this is the first message of a brand-new chat
+    // (activeId state hasn't updated yet at that point).
+    let convoId = activeId;
     try {
-      let convoId = activeId;
       if (!convoId) {
         const convo = await api.createConversation(
           question.length > 48 ? `${question.slice(0, 48)}…` : question,
@@ -151,15 +154,15 @@ export default function ChatApp() {
       queryClient.invalidateQueries({ queryKey: ["messages", convoId] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
     } catch (err) {
-      if (activeId) {
+      if (convoId) {
         await api
           .addMessage(
-            activeId,
+            convoId,
             "assistant",
             err instanceof Error ? `Error: ${err.message}` : "Something went wrong.",
           )
           .catch(() => undefined);
-        queryClient.invalidateQueries({ queryKey: ["messages", activeId] });
+        queryClient.invalidateQueries({ queryKey: ["messages", convoId] });
       }
     } finally {
       setPending(null);
