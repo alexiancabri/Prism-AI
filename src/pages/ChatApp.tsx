@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   Send,
-  Quote,
   X,
   FileText,
   Loader2,
@@ -316,37 +315,40 @@ function MessageBubble({
       </div>
 
       {citations.length > 0 && (
-        <div className="max-w-[85%] space-y-2">
-          {citations.map((c, i) => {
-            const isActive =
-              activeCitation?.chunk_id === c.chunk_id &&
-              activeCitation?.text === c.text;
-            return (
-              <button
-                key={`${c.chunk_id}-${i}`}
-                onClick={() => onCitationClick(c)}
-                className={cn(
-                  "block w-full rounded-xl border bg-white/[0.02] p-3 text-left transition-colors hover:border-[#3b82f6]/40",
-                  isActive
-                    ? "border-[#3b82f6]/60 ring-1 ring-[#3b82f6]/30"
-                    : "border-white/10",
-                )}
-              >
-                <div className="flex items-start gap-2">
-                  <Quote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#3b82f6]" />
-                  <p className="text-sm italic text-neutral-300">"{c.text}"</p>
-                </div>
-                <div className="mt-2 flex items-center gap-2 pl-5 text-xs text-neutral-600">
-                  <FileText className="h-3 w-3" />
-                  <span className="font-medium text-neutral-500">
-                    {c.document_name}
+        <div className="max-w-[85%]">
+          <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-neutral-600">
+            Sources
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {citations.map((c, i) => {
+              const isActive =
+                activeCitation?.chunk_id === c.chunk_id &&
+                activeCitation?.text === c.text;
+              return (
+                <button
+                  key={`${c.chunk_id}-${i}`}
+                  onClick={() => onCitationClick(c)}
+                  title={c.text}
+                  className={cn(
+                    "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:border-[#3b82f6]/50 hover:bg-[#3b82f6]/[0.06]",
+                    isActive
+                      ? "border-[#3b82f6]/60 bg-[#3b82f6]/10 text-[#bfd4ff]"
+                      : "border-white/10 bg-white/[0.02] text-neutral-400",
+                  )}
+                >
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#3b82f6]/20 text-[10px] font-semibold text-[#3b82f6]">
+                    {i + 1}
                   </span>
-                  <span>·</span>
-                  <span>{c.location}</span>
-                </div>
-              </button>
-            );
-          })}
+                  <FileText className="h-3 w-3 shrink-0 text-neutral-500" />
+                  <span className="truncate font-medium">{c.document_name}</span>
+                  <span className="shrink-0 text-neutral-600">·</span>
+                  <span className="shrink-0 whitespace-nowrap text-neutral-500">
+                    {c.location}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

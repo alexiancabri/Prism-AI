@@ -8,11 +8,21 @@ Claude reference each citation by `chunk_id`; the backend fills in
 model for those fields.
 """
 import json
+import re
 from functools import lru_cache
 
 from anthropic import Anthropic
 
 from . import config
+
+# Models sometimes emit literal "\uXXXX" escape text inside verbatim quotes
+# (e.g. "—" instead of an em dash). Decode those back to real characters
+# so citations read cleanly and match the source for highlighting.
+_UNICODE_ESCAPE = re.compile(r"\\u([0-9a-fA-F]{4})")
+
+
+def _clean_quote(text: str) -> str:
+    return _UNICODE_ESCAPE.sub(lambda m: chr(int(m.group(1), 16)), text)
 
 SYSTEM_PROMPT = """You are Prism AI, an enterprise document Q&A assistant.
 
@@ -99,7 +109,7 @@ def answer_question(question: str, chunks: list[dict]) -> dict:
             continue  # model referenced a chunk we didn't supply — drop it
         citations.append(
             {
-                "text": cit.get("text", ""),
+                "text": _clean_quote(cit.get("text", "")),
                 "document_name": src["document_name"],
                 "document_id": src["document_id"],
                 "chunk_id": src["id"],
