@@ -516,10 +516,7 @@ export default function ChatApp() {
                       {pending.question}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-neutral-500">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Searching your
-                    documents…
-                  </div>
+                  <ThinkingIndicator question={pending.question} />
                 </>
               )}
             </div>
@@ -562,6 +559,73 @@ export default function ChatApp() {
         )}
       </div>
     </AppLayout>
+  );
+}
+
+/** Pull a short topic out of the question so the thinking states can name it,
+ *  by stripping the common leading phrasing ("what is", "find passages about"…).
+ *  Returns null when the remainder is too long to read as a tidy topic. */
+function deriveTopic(question: string): string | null {
+  let q = question.trim().replace(/[?.!]+$/, "");
+  const patterns = [
+    /^find (?:the )?(?:exact )?(?:passages?|quotes?|info(?:rmation)?)\s+(?:about|on|for|regarding)\s+/i,
+    /^compare (?:what (?:my )?documents? say about\s+)?/i,
+    /^give me a (?:concise )?summary of\s+/i,
+    /^summari[sz]e\s+/i,
+    /^what (?:do|does) (?:my )?documents? say about\s+/i,
+    /^what(?:'s| is| are| was| were)\s+(?:the\s+)?/i,
+    /^(?:tell me about|look(?: something)? up|explain|describe|how (?:do|does|to))\s+/i,
+  ];
+  for (const p of patterns) {
+    if (p.test(q)) {
+      q = q.replace(p, "").trim();
+      break;
+    }
+  }
+  if (!q || q.length > 40 || q.split(/\s+/).length > 6) return null;
+  return q;
+}
+
+/** Animated "thinking" indicator: a pulsing orb plus staged status messages
+ *  that adapt to the question and shimmer while the answer is generated. */
+function ThinkingIndicator({ question }: { question: string }) {
+  const stages = useMemo(() => {
+    const topic = deriveTopic(question);
+    return topic
+      ? [
+          "Reading your documents",
+          `Searching for “${topic}”`,
+          "Pulling the most relevant passages",
+          "Composing an answer",
+        ]
+      : [
+          "Reading your documents",
+          "Finding relevant passages",
+          "Cross-referencing your sources",
+          "Composing an answer",
+        ];
+  }, [question]);
+
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    setI(0);
+    const id = setInterval(
+      () => setI((prev) => (prev < stages.length - 1 ? prev + 1 : prev)),
+      2200,
+    );
+    return () => clearInterval(id);
+  }, [stages]);
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className="thinking-orb" aria-hidden="true" />
+      <div key={i} className="thinking-fade">
+        <span className="thinking-text text-sm">
+          {stages[i]}
+          <span className="thinking-dots" />
+        </span>
+      </div>
+    </div>
   );
 }
 
