@@ -10,6 +10,7 @@ import {
   MessagesSquare,
   Maximize2,
   Minimize2,
+  ExternalLink,
   Sparkles,
   Search,
   ListChecks,
@@ -172,6 +173,17 @@ function DocumentPreview({
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {hasFile && (
+            <a
+              href={fileData!.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open original document"
+              className="rounded-md p-1.5 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          )}
           <button
             onClick={toggleExpand}
             title={expanded ? "Collapse panel" : "Expand panel"}
