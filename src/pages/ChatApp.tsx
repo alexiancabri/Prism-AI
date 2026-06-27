@@ -350,8 +350,16 @@ export default function ChatApp() {
   const [input, setInput] = useState("");
   const [pending, setPending] = useState<PendingExchange | null>(null);
   const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
+  // Id of the freshly generated assistant message to reveal with a typewriter
+  // effect (cleared once done, so switching chats / reloads don't re-animate).
+  const [typingId, setTypingId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  function scrollToBottom() {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }
   // Synchronous send guard — the `pending` state check is async and a rapid
   // double event (Enter + click, double Enter) can slip past it and post twice.
   const sendingRef = useRef(false);
@@ -431,6 +439,7 @@ export default function ChatApp() {
         userMsg,
         assistantMsg,
       ]);
+      setTypingId(assistantMsg.id);
       if (activeId !== convoId) setActiveId(convoId);
       queryClient.invalidateQueries({ queryKey: ["messages", convoId] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
@@ -506,6 +515,9 @@ export default function ChatApp() {
                   message={m}
                   onCitationClick={setActiveCitation}
                   activeCitation={activeCitation}
+                  animate={m.id === typingId}
+                  onTick={scrollToBottom}
+                  onTypingDone={() => setTypingId(null)}
                 />
               ))}
 
@@ -720,14 +732,63 @@ function WelcomeScreen({ onPick }: { onPick: (prompt: string) => void }) {
   );
 }
 
+/** Reveal `text` with a typewriter effect, capped to a short duration so even
+ *  long answers finish quickly (no real waiting). Returns the visible slice and
+ *  whether it's finished. When `enabled` is false the full text shows at once. */
+function useTypewriter(
+  text: string,
+  enabled: boolean,
+  onTick?: () => void,
+  onDone?: () => void,
+) {
+  const [shown, setShown] = useState(enabled ? "" : text);
+  const [done, setDone] = useState(!enabled);
+  const cbs = useRef({ onTick, onDone });
+  cbs.current = { onTick, onDone };
+
+  useEffect(() => {
+    if (!enabled) {
+      setShown(text);
+      setDone(true);
+      return;
+    }
+    let raf = 0;
+    const duration = Math.min(900, Math.max(250, text.length * 9));
+    const start = performance.now();
+    const step = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      setShown(text.slice(0, Math.floor(p * text.length)));
+      cbs.current.onTick?.();
+      if (p < 1) {
+        raf = requestAnimationFrame(step);
+      } else {
+        setShown(text);
+        setDone(true);
+        cbs.current.onDone?.();
+      }
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text, enabled]);
+
+  return { shown, done };
+}
+
 function MessageBubble({
   message,
   onCitationClick,
   activeCitation,
+  animate,
+  onTick,
+  onTypingDone,
 }: {
   message: Message;
   onCitationClick: (c: Citation) => void;
   activeCitation: Citation | null;
+  animate: boolean;
+  onTick: () => void;
+  onTypingDone: () => void;
 }) {
   if (message.role === "user") {
     return (
@@ -739,15 +800,49 @@ function MessageBubble({
     );
   }
 
+  return (
+    <AssistantBubble
+      message={message}
+      onCitationClick={onCitationClick}
+      activeCitation={activeCitation}
+      animate={animate}
+      onTick={onTick}
+      onTypingDone={onTypingDone}
+    />
+  );
+}
+
+function AssistantBubble({
+  message,
+  onCitationClick,
+  activeCitation,
+  animate,
+  onTick,
+  onTypingDone,
+}: {
+  message: Message;
+  onCitationClick: (c: Citation) => void;
+  activeCitation: Citation | null;
+  animate: boolean;
+  onTick: () => void;
+  onTypingDone: () => void;
+}) {
+  const { shown, done } = useTypewriter(
+    message.content,
+    animate,
+    onTick,
+    onTypingDone,
+  );
   const citations = message.citations ?? [];
   return (
     <div className="space-y-3">
       <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-neutral-200">
-        {message.content}
+        {shown}
+        {!done && <span className="type-caret" aria-hidden="true" />}
       </div>
 
-      {citations.length > 0 && (
-        <div className="max-w-[85%]">
+      {citations.length > 0 && done && (
+        <div className="thinking-fade max-w-[85%]">
           <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-neutral-600">
             Sources
           </div>
