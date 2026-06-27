@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
-import AppLayout from "@/components/app/AppLayout";
 import {
   GoogleDriveLogo,
   NotionLogo,
@@ -130,8 +129,7 @@ export default function Sources() {
     "rounded-xl border border-white/10 bg-white/[0.02] p-5 text-left transition-colors hover:border-[#3b82f6]/40 hover:bg-[#3b82f6]/[0.04]";
 
   return (
-    <AppLayout>
-      <div className="relative z-10 mx-auto max-w-5xl px-8 py-8">
+    <div className="relative z-10 mx-auto max-w-5xl px-8 py-8">
         <header className="mb-8">
           <h1 className="text-2xl font-semibold tracking-tight text-neutral-100">
             Sources
@@ -287,7 +285,6 @@ export default function Sources() {
             </ul>
           )}
         </section>
-      </div>
-    </AppLayout>
+    </div>
   );
 }

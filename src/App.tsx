@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/app/ProtectedRoute";
+import AppShell from "@/components/app/AppShell";
 import Index from "./pages/Index";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
@@ -33,7 +34,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+          <Suspense fallback={<div className="min-h-screen bg-black" />}>
             <Routes>
               {/* Marketing */}
               <Route path="/" element={<Cinematic />} />
@@ -47,39 +48,21 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
 
-              {/* Product (auth-gated) */}
+              {/* Product (auth-gated) — one persistent shell keeps the dark
+                  AppLayout mounted across these routes so navigating between
+                  them doesn't flash the white body. */}
               <Route
-                path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <Dashboard />
+                    <AppShell />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/sources"
-                element={
-                  <ProtectedRoute>
-                    <Sources />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/chat"
-                element={
-                  <ProtectedRoute>
-                    <ChatApp />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              />
+              >
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/sources" element={<Sources />} />
+                <Route path="/chat" element={<ChatApp />} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

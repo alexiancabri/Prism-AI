@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, MessageSquare, Database, Plus, ArrowRight } from "lucide-react";
-import AppLayout from "@/components/app/AppLayout";
 import { api } from "@/lib/api";
 
 function StatCard({
@@ -33,8 +32,7 @@ export default function Dashboard() {
   });
 
   return (
-    <AppLayout>
-      <div className="relative z-10 mx-auto max-w-5xl px-8 py-8">
+    <div className="relative z-10 mx-auto max-w-5xl px-8 py-8">
         <header className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-neutral-100">
@@ -106,7 +104,6 @@ export default function Dashboard() {
             ))}
           </ul>
         </section>
-      </div>
-    </AppLayout>
+    </div>
   );
 }

@@ -17,7 +17,7 @@
   --green: #22c55e;
   --purple: #a78bfa;
   --mono: "JetBrains Mono", ui-monospace, monospace;
-  --sans: "Inter", -apple-system, system-ui, sans-serif;
+  --sans: "Space Grotesk", "Inter", -apple-system, system-ui, sans-serif;
 
   background: var(--bg);
   color: var(--text);

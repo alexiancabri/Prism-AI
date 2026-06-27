@@ -16,7 +16,6 @@ import {
   Quote,
   ArrowUpRight,
 } from "lucide-react";
-import AppLayout from "@/components/app/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { api, type Citation, type Message, type DocumentDetail } from "@/lib/api";
 import { makeHighlighter, pageFromLocation } from "@/lib/pdf";
@@ -462,8 +461,7 @@ export default function ChatApp() {
   }
 
   return (
-    <AppLayout>
-      <div className="relative z-10 flex h-screen">
+    <div className="relative z-10 flex h-screen">
         {/* Conversation history */}
         <div className="flex w-64 shrink-0 flex-col border-r border-white/10 bg-black/40">
           <div className="p-3">
@@ -569,8 +567,7 @@ export default function ChatApp() {
             onClose={() => setActiveCitation(null)}
           />
         )}
-      </div>
-    </AppLayout>
+    </div>
   );
 }
 

@@ -10,7 +10,7 @@ export default function ProtectedRoute({
   const location = useLocation();
 
   if (loading) {
-    return <div className="min-h-screen bg-background" />;
+    return <div className="min-h-screen bg-black" />;
   }
   if (!session) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;

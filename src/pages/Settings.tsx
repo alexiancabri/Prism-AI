@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AppLayout from "@/components/app/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 
@@ -34,8 +33,7 @@ export default function Settings() {
     "w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-neutral-300";
 
   return (
-    <AppLayout>
-      <div className="relative z-10 mx-auto max-w-2xl px-8 py-8">
+    <div className="relative z-10 mx-auto max-w-2xl px-8 py-8">
         <header className="mb-8">
           <h1 className="text-2xl font-semibold tracking-tight text-neutral-100">
             Settings
@@ -101,7 +99,6 @@ export default function Settings() {
             )}
           </div>
         </section>
-      </div>
-    </AppLayout>
+    </div>
   );
 }
