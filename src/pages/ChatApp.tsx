@@ -10,8 +10,14 @@ import {
   MessagesSquare,
   Maximize2,
   Minimize2,
+  Sparkles,
+  Search,
+  ListChecks,
+  Quote,
+  ArrowUpRight,
 } from "lucide-react";
 import AppLayout from "@/components/app/AppLayout";
+import { useAuth } from "@/hooks/useAuth";
 import { api, type Citation, type Message, type DocumentDetail } from "@/lib/api";
 import { makeHighlighter, pageFromLocation } from "@/lib/pdf";
 import { highlightDocParagraph } from "@/lib/docx";
@@ -345,6 +351,7 @@ export default function ChatApp() {
   const [pending, setPending] = useState<PendingExchange | null>(null);
   const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   // Synchronous send guard — the `pending` state check is async and a rapid
   // double event (Enter + click, double Enter) can slip past it and post twice.
   const sendingRef = useRef(false);
@@ -371,6 +378,18 @@ export default function ChatApp() {
     setActiveId(null);
     setActiveCitation(null);
     setPending(null);
+  }
+
+  // Prefill the composer with a suggested prompt and focus it so the user can
+  // edit or just hit Enter.
+  function pickSuggestion(prompt: string) {
+    setInput(prompt);
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
   }
 
   async function send() {
@@ -474,19 +493,11 @@ export default function ChatApp() {
         </div>
 
         {/* Chat area */}
-        <div className="flex flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6">
             <div className="mx-auto max-w-2xl space-y-6">
               {messages.length === 0 && !pending && (
-                <div className="mt-20 text-center">
-                  <h2 className="text-lg font-semibold text-neutral-100">
-                    Ask anything about your documents
-                  </h2>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    Prism answers only from the documents you've indexed, with
-                    exact quotes.
-                  </p>
-                </div>
+                <WelcomeScreen onPick={pickSuggestion} />
               )}
 
               {messages.map((m) => (
@@ -518,6 +529,7 @@ export default function ChatApp() {
           <div className="border-t border-white/10 px-6 py-4">
             <div className="mx-auto flex max-w-2xl items-end gap-2">
               <textarea
+                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -550,6 +562,97 @@ export default function ChatApp() {
         )}
       </div>
     </AppLayout>
+  );
+}
+
+const SUGGESTIONS = [
+  {
+    icon: Sparkles,
+    title: "Summarize my documents",
+    prompt: "Give me a concise summary of the key points across my documents.",
+  },
+  {
+    icon: Quote,
+    title: "Pull exact quotes",
+    prompt: "Find the exact passages about ",
+  },
+  {
+    icon: ListChecks,
+    title: "Compare details",
+    prompt: "Compare what my documents say about ",
+  },
+  {
+    icon: Search,
+    title: "Look something up",
+    prompt: "What do my documents say about ",
+  },
+];
+
+function greetingFor(hour: number): string {
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+/** Claude-style empty state: a glowing brand mark, a time-aware greeting, and
+ *  clickable suggestion cards that prefill the composer. */
+function WelcomeScreen({ onPick }: { onPick: (prompt: string) => void }) {
+  const { user } = useAuth();
+  const handle = user?.email?.split("@")[0];
+  const name = handle
+    ? handle.charAt(0).toUpperCase() + handle.slice(1)
+    : null;
+
+  return (
+    <div className="flex min-h-[62vh] flex-col items-center justify-center px-4 text-center">
+      {/* Glowing brand mark */}
+      <div className="relative mb-7">
+        <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-[#3b82f6] to-[#7c5cff] opacity-30 blur-2xl" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M12 3 L21 20 L3 20 Z"
+              stroke="#fafafa"
+              strokeWidth="1.4"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M7 20 L15.5 6"
+              stroke="#3b82f6"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <h1 className="text-2xl font-semibold tracking-tight text-neutral-100">
+        {greetingFor(new Date().getHours())}
+        {name ? `, ${name}` : ""}
+      </h1>
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-neutral-500">
+        Ask anything about your documents. Prism answers only from what you've
+        indexed — with exact quotes and sources.
+      </p>
+
+      <div className="mt-9 grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+        {SUGGESTIONS.map(({ icon: Icon, title, prompt }) => (
+          <button
+            key={title}
+            onClick={() => onPick(prompt)}
+            className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3.5 text-left transition-all hover:border-[#3b82f6]/40 hover:bg-white/[0.04]"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#3b82f6]/10 text-[#3b82f6]">
+              <Icon className="h-[18px] w-[18px]" />
+            </span>
+            <span className="flex-1 text-sm font-medium text-neutral-200">
+              {title}
+            </span>
+            <ArrowUpRight className="h-4 w-4 shrink-0 text-neutral-600 transition-colors group-hover:text-[#3b82f6]" />
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

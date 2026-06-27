@@ -22,6 +22,8 @@
   color: rgb(212 212 212);
   font-size: 0.875rem;
   line-height: 1.65;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 .doc-prose h1,
 .doc-prose h2,
