@@ -57,11 +57,56 @@ function DocumentPreview({
 
   const [fileError, setFileError] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [width, setWidth] = useState(440);
+  const [dragging, setDragging] = useState(false);
   const [pdfWidth, setPdfWidth] = useState(400);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const draggingRef = useRef(false);
 
   // Reset the file-failure state when the citation points at a new document.
   useEffect(() => setFileError(false), [citation.document_id]);
+
+  // Drag-to-resize: the panel hugs the right edge, so its width is the distance
+  // from the pointer to the window's right edge. Clamp so neither the chat nor
+  // the document can be squeezed away. Listeners live on window so the drag
+  // keeps tracking even when the pointer outruns the thin handle.
+  useEffect(() => {
+    function onMove(e: PointerEvent) {
+      if (!draggingRef.current) return;
+      const next = window.innerWidth - e.clientX;
+      setWidth(Math.max(360, Math.min(next, window.innerWidth - 420)));
+    }
+    function onUp() {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      setDragging(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, []);
+
+  function startDrag(e: React.PointerEvent) {
+    e.preventDefault();
+    draggingRef.current = true;
+    setDragging(true);
+    setExpanded(false);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }
+
+  function toggleExpand() {
+    setExpanded((v) => {
+      const next = !v;
+      setWidth(next ? Math.min(960, window.innerWidth * 0.75) : 440);
+      return next;
+    });
+  }
 
   // Render the PDF at the panel's actual inner width so it scales up when the
   // panel is expanded (and down on narrow screens), minus horizontal padding.
@@ -93,11 +138,27 @@ function DocumentPreview({
 
   return (
     <div
+      style={{ width }}
       className={cn(
-        "flex h-full shrink-0 flex-col border-l border-white/10 bg-black/40 transition-[width] duration-300 ease-in-out",
-        expanded ? "w-[min(960px,75vw)]" : "w-[440px]",
+        "relative flex h-full shrink-0 flex-col border-l border-white/10 bg-black/40",
+        !dragging && "transition-[width] duration-200 ease-in-out",
       )}
     >
+      {/* Drag handle on the chat↔document divider */}
+      <div
+        onPointerDown={startDrag}
+        onDoubleClick={toggleExpand}
+        title="Drag to resize · double-click to expand"
+        className="group absolute left-0 top-0 z-20 flex h-full w-2 -translate-x-1/2 cursor-col-resize items-center justify-center"
+      >
+        <div
+          className={cn(
+            "h-full w-px transition-colors",
+            dragging ? "bg-[#3b82f6]" : "bg-white/10 group-hover:bg-[#3b82f6]/60",
+          )}
+        />
+      </div>
+
       <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <div className="flex min-w-0 items-center gap-2">
           <FileText className="h-4 w-4 shrink-0 text-neutral-500" />
@@ -107,7 +168,7 @@ function DocumentPreview({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <button
-            onClick={() => setExpanded((v) => !v)}
+            onClick={toggleExpand}
             title={expanded ? "Collapse panel" : "Expand panel"}
             className="rounded-md p-1.5 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
           >
