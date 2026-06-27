@@ -8,6 +8,8 @@ import {
   FileText,
   Loader2,
   MessagesSquare,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import AppLayout from "@/components/app/AppLayout";
 import { api, type Citation, type Message, type DocumentDetail } from "@/lib/api";
@@ -54,10 +56,24 @@ function DocumentPreview({
   });
 
   const [fileError, setFileError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [pdfWidth, setPdfWidth] = useState(400);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   // Reset the file-failure state when the citation points at a new document.
   useEffect(() => setFileError(false), [citation.document_id]);
+
+  // Render the PDF at the panel's actual inner width so it scales up when the
+  // panel is expanded (and down on narrow screens), minus horizontal padding.
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const update = () => setPdfWidth(Math.max(280, el.clientWidth - 32));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const kind = fileData?.kind;
   const hasFile = !!fileData?.url && !fileError;
@@ -76,7 +92,12 @@ function DocumentPreview({
   }
 
   return (
-    <div className="flex h-full w-[440px] shrink-0 flex-col border-l border-white/10 bg-black/40">
+    <div
+      className={cn(
+        "flex h-full shrink-0 flex-col border-l border-white/10 bg-black/40 transition-[width] duration-300 ease-in-out",
+        expanded ? "w-[min(960px,75vw)]" : "w-[440px]",
+      )}
+    >
       <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <div className="flex min-w-0 items-center gap-2">
           <FileText className="h-4 w-4 shrink-0 text-neutral-500" />
@@ -84,12 +105,26 @@ function DocumentPreview({
             {citation.document_name}
           </span>
         </div>
-        <button
-          onClick={onClose}
-          className="rounded-md p-1.5 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            title={expanded ? "Collapse panel" : "Expand panel"}
+            className="rounded-md p-1.5 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
+          >
+            {expanded ? (
+              <Minimize2 className="h-4 w-4" />
+            ) : (
+              <Maximize2 className="h-4 w-4" />
+            )}
+          </button>
+          <button
+            onClick={onClose}
+            title="Close"
+            className="rounded-md p-1.5 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <div
@@ -112,7 +147,7 @@ function DocumentPreview({
           >
             <Page
               pageNumber={page}
-              width={400}
+              width={pdfWidth}
               customTextRenderer={renderHighlight}
               onRenderTextLayerSuccess={scrollToHighlight}
               renderAnnotationLayer={false}

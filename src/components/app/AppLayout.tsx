@@ -51,61 +51,60 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="relative z-10 flex min-h-screen">
         <aside
           data-tour="nav"
-          className="flex w-60 shrink-0 flex-col border-r border-white/10 bg-black/60 backdrop-blur-xl"
+          className="flex w-16 shrink-0 flex-col items-center border-r border-white/10 bg-black/60 py-4 backdrop-blur-xl"
         >
           {/* Logo */}
-          <div className="flex items-center gap-2 px-5 py-5">
-            {PRISM_MARK}
-            <span className="text-[17px] font-semibold tracking-tight">Prism AI</span>
-          </div>
+          <div className="flex h-10 w-10 items-center justify-center">{PRISM_MARK}</div>
 
           {/* Nav */}
-          <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
+          <nav className="mt-4 flex flex-1 flex-col gap-1.5">
             {NAV.map(({ to, label, icon: Icon, tour }) => (
               <NavLink
                 key={to}
                 to={to}
                 data-tour={tour}
+                title={label}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "group relative flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
                     isActive
                       ? "bg-[#3b82f6]/10 text-[#3b82f6]"
                       : "text-neutral-400 hover:bg-white/5 hover:text-neutral-100",
                   )
                 }
               >
-                <Icon className="h-4 w-4" />
-                {label}
+                <Icon className="h-[18px] w-[18px]" />
+                <span className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-md border border-white/10 bg-neutral-900 px-2 py-1 text-xs font-medium text-neutral-100 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                  {label}
+                </span>
               </NavLink>
             ))}
           </nav>
 
           {/* User + org */}
-          <div className="border-t border-white/10 p-3">
+          <div
+            data-tour="account"
+            className="group relative mt-2 flex flex-col items-center gap-2"
+          >
             <div
-              data-tour="account"
-              className="flex items-center gap-3 rounded-lg px-2 py-2"
+              title={user?.email ?? undefined}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#3b82f6] to-[#7c5cff] text-sm font-semibold text-white"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#3b82f6] to-[#7c5cff] text-sm font-semibold text-white">
-                {(user?.email ?? "?").charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-neutral-100">
-                  {user?.email}
-                </p>
-                <p className="truncate text-xs text-neutral-500">
-                  {orgLabel(user?.email)}
-                </p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                title="Sign out"
-                className="rounded-md p-1.5 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
+              {(user?.email ?? "?").charAt(0).toUpperCase()}
             </div>
+            <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-neutral-900 px-2 py-1 text-xs text-neutral-300 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+              {user?.email}
+              <span className="block text-[10px] text-neutral-500">
+                {orgLabel(user?.email)}
+              </span>
+            </span>
+            <button
+              onClick={handleSignOut}
+              title="Sign out"
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </aside>
 
