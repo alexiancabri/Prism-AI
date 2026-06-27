@@ -148,7 +148,7 @@ function DocumentPreview({
    *  opened synchronously first so it isn't caught by the popup blocker. */
   async function openOriginal() {
     if (!fileData?.url) return;
-    if (!isPdf) {
+    if (kind !== "pdf") {
       window.open(fileData.url, "_blank", "noopener,noreferrer");
       return;
     }
@@ -206,7 +206,7 @@ function DocumentPreview({
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          {hasFile && (
+          {fileData?.url && (
             <button
               onClick={openOriginal}
               title="Open original document"
