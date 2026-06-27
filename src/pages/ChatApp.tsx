@@ -184,6 +184,9 @@ export default function ChatApp() {
   const [pending, setPending] = useState<PendingExchange | null>(null);
   const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Synchronous send guard — the `pending` state check is async and a rapid
+  // double event (Enter + click, double Enter) can slip past it and post twice.
+  const sendingRef = useRef(false);
 
   const { data: conversations = [] } = useQuery({
     queryKey: ["conversations"],
@@ -194,6 +197,9 @@ export default function ChatApp() {
     queryKey: ["messages", activeId],
     queryFn: () => api.listMessages(activeId as string),
     enabled: !!activeId,
+    // Avoid a stray refetch mid-send that could momentarily show the just-sent
+    // message alongside the optimistic bubble.
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
@@ -208,7 +214,8 @@ export default function ChatApp() {
 
   async function send() {
     const question = input.trim();
-    if (!question || pending) return;
+    if (!question || sendingRef.current) return;
+    sendingRef.current = true;
     setInput("");
     setPending({ question });
 
@@ -222,14 +229,29 @@ export default function ChatApp() {
           question.length > 48 ? `${question.slice(0, 48)}…` : question,
         );
         convoId = convo.id;
-        setActiveId(convoId);
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
       }
 
-      await api.addMessage(convoId, "user", question);
+      const userMsg = await api.addMessage(convoId, "user", question);
       const result = await api.query(question);
-      await api.addMessage(convoId, "assistant", result.summary, result.citations);
+      const assistantMsg = await api.addMessage(
+        convoId,
+        "assistant",
+        result.summary,
+        result.citations,
+      );
 
+      // Seed the cache with the real messages, THEN activate the conversation,
+      // so the optimistic bubble is swapped for the stored messages in a single
+      // render — no window where both a fetched copy and the pending bubble show.
+      // (For a new chat we deliberately delay setActiveId until here so the
+      // messages query doesn't fetch the half-finished exchange mid-flight.)
+      queryClient.setQueryData<Message[]>(["messages", convoId], (old) => [
+        ...(old ?? []),
+        userMsg,
+        assistantMsg,
+      ]);
+      if (activeId !== convoId) setActiveId(convoId);
       queryClient.invalidateQueries({ queryKey: ["messages", convoId] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
     } catch (err) {
@@ -241,10 +263,12 @@ export default function ChatApp() {
             err instanceof Error ? `Error: ${err.message}` : "Something went wrong.",
           )
           .catch(() => undefined);
+        if (activeId !== convoId) setActiveId(convoId);
         queryClient.invalidateQueries({ queryKey: ["messages", convoId] });
       }
     } finally {
       setPending(null);
+      sendingRef.current = false;
     }
   }
 
