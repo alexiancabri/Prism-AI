@@ -12,6 +12,7 @@ import {
 import AppLayout from "@/components/app/AppLayout";
 import { api, type Citation, type Message, type DocumentDetail } from "@/lib/api";
 import { makeHighlighter, pageFromLocation } from "@/lib/pdf";
+import { highlightDocParagraph } from "@/lib/docx";
 import { cn } from "@/lib/utils";
 
 /** Wrap the exact quoted substring in a blue highlight. */
@@ -52,16 +53,16 @@ function DocumentPreview({
     retry: false,
   });
 
-  const [pdfError, setPdfError] = useState(false);
+  const [fileError, setFileError] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
 
-  // Reset the PDF-failure state when the citation points at a new document.
-  useEffect(() => setPdfError(false), [citation.document_id]);
+  // Reset the file-failure state when the citation points at a new document.
+  useEffect(() => setFileError(false), [citation.document_id]);
 
-  const isPdf =
-    citation.document_name.toLowerCase().endsWith(".pdf") &&
-    !!fileData?.url &&
-    !pdfError;
+  const kind = fileData?.kind;
+  const hasFile = !!fileData?.url && !fileError;
+  const isPdf = kind === "pdf" && hasFile;
+  const isDocx = kind === "docx" && hasFile;
   const page = pageFromLocation(citation.location);
   const renderHighlight = useMemo(
     () => makeHighlighter(citation.text),
@@ -101,7 +102,7 @@ function DocumentPreview({
         {isPdf ? (
           <Document
             file={fileData!.url}
-            onLoadError={() => setPdfError(true)}
+            onLoadError={() => setFileError(true)}
             loading={
               <div className="flex items-center gap-2 py-6 text-sm text-neutral-500">
                 <Loader2 className="h-4 w-4 animate-spin" /> Loading PDF…
@@ -117,6 +118,12 @@ function DocumentPreview({
               renderAnnotationLayer={false}
             />
           </Document>
+        ) : isDocx ? (
+          <DocxView
+            url={fileData!.url}
+            quote={citation.text}
+            onError={() => setFileError(true)}
+          />
         ) : (
           <DocumentTextView
             data={data}
@@ -126,6 +133,64 @@ function DocumentPreview({
         )}
       </div>
     </div>
+  );
+}
+
+/** Renders a .docx as formatted HTML (via mammoth) and highlights the cited
+ *  paragraph. Falls back (via onError) to the extracted-text view on failure. */
+function DocxView({
+  url,
+  quote,
+  onError,
+}: {
+  url: string;
+  quote: string;
+  onError: () => void;
+}) {
+  const [html, setHtml] = useState<string | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
+  useEffect(() => {
+    let cancelled = false;
+    setHtml(null);
+    (async () => {
+      try {
+        const buf = await fetch(url).then((r) => {
+          if (!r.ok) throw new Error("fetch failed");
+          return r.arrayBuffer();
+        });
+        const mammoth = await import("mammoth");
+        const { value } = await mammoth.convertToHtml({ arrayBuffer: buf });
+        if (!cancelled) setHtml(value);
+      } catch {
+        if (!cancelled) onErrorRef.current();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  useEffect(() => {
+    if (html && ref.current) highlightDocParagraph(ref.current, quote);
+  }, [html, quote]);
+
+  if (html === null) {
+    return (
+      <div className="flex items-center gap-2 py-6 text-sm text-neutral-500">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading document…
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={ref}
+      className="doc-prose"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }
 

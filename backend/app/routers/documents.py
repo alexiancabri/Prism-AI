@@ -19,10 +19,25 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 ALLOWED_EXT = (".pdf", ".docx")
 STORAGE_BUCKET = "documents"
+_CONTENT_TYPE = {
+    ".pdf": "application/pdf",
+    ".docx": (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ),
+}
 
 
-def _pdf_storage_path(org_id: str, document_id: str) -> str:
-    return f"{org_id}/{document_id}.pdf"
+def _file_ext(name: str) -> str:
+    name = (name or "").lower()
+    if name.endswith(".pdf"):
+        return ".pdf"
+    if name.endswith(".docx"):
+        return ".docx"
+    return ""
+
+
+def _storage_path(org_id: str, document_id: str, ext: str) -> str:
+    return f"{org_id}/{document_id}{ext}"
 
 
 def _ensure_bucket(sb) -> None:
@@ -35,19 +50,24 @@ def _ensure_bucket(sb) -> None:
             pass
 
 
-def _store_pdf(sb, org_id: str, document_id: str, data: bytes) -> None:
-    """Best-effort: keep the original PDF so the UI can render it with the
-    cited region highlighted. A failure here must never break indexing — the
-    preview falls back to extracted text when no file is available."""
+def _store_original(
+    sb, org_id: str, document_id: str, ext: str, data: bytes
+) -> None:
+    """Best-effort: keep the original file so the UI can render it faithfully
+    (a real PDF page, or a Word doc with formatting). A failure here must never
+    break indexing — the preview falls back to extracted text."""
+    ctype = _CONTENT_TYPE.get(ext)
+    if not ctype:
+        return
     try:
         _ensure_bucket(sb)
         sb.storage.from_(STORAGE_BUCKET).upload(
-            _pdf_storage_path(org_id, document_id),
+            _storage_path(org_id, document_id, ext),
             data,
-            {"content-type": "application/pdf", "upsert": "true"},
+            {"content-type": ctype, "upsert": "true"},
         )
     except Exception as exc:  # noqa: BLE001
-        print(f"[upload] PDF storage failed for {document_id}: {exc}")
+        print(f"[upload] file storage failed for {document_id}: {exc}")
 
 
 def _mark_failed(sb, document_id: str, reason: str) -> None:
@@ -125,8 +145,9 @@ async def upload_document(
     )
     document = doc.data[0]
 
-    if filename.lower().endswith(".pdf"):
-        _store_pdf(sb, user.org_id, document["id"], data)
+    ext = _file_ext(filename)
+    if ext:
+        _store_original(sb, user.org_id, document["id"], ext, data)
 
     background_tasks.add_task(
         _index_document, document["id"], user.org_id, filename, data
@@ -174,10 +195,12 @@ def get_document(document_id: str, user: User = CurrentUser):
 
 @router.get("/{document_id}/file")
 def get_document_file(document_id: str, user: User = CurrentUser):
-    """Signed URL to the original PDF so the browser can render it (PDFs only).
+    """Signed URL + kind ('pdf' | 'docx') for the original file so the browser
+    can render it faithfully.
 
-    Returns 404 when the document isn't a PDF or predates PDF storage — the UI
-    then falls back to the extracted-text preview.
+    Returns 404 when the document has no renderable original (unsupported type,
+    or uploaded before file storage existed) — the UI falls back to the
+    extracted-text preview.
     """
     sb = get_supabase()
     doc = (
@@ -189,22 +212,23 @@ def get_document_file(document_id: str, user: User = CurrentUser):
     )
     if not doc.data:
         raise HTTPException(404, "Document not found.")
-    if not (doc.data[0]["name"] or "").lower().endswith(".pdf"):
-        raise HTTPException(404, "No PDF preview available for this document.")
+    ext = _file_ext(doc.data[0]["name"])
+    if not ext:
+        raise HTTPException(404, "No file preview available for this document.")
 
     try:
         res = sb.storage.from_(STORAGE_BUCKET).create_signed_url(
-            _pdf_storage_path(user.org_id, document_id), 3600
+            _storage_path(user.org_id, document_id, ext), 3600
         )
-    except Exception as exc:  # noqa: BLE001 — file may predate PDF storage
-        raise HTTPException(404, "PDF file not available.") from exc
+    except Exception as exc:  # noqa: BLE001 — file may predate file storage
+        raise HTTPException(404, "File not available.") from exc
 
     url = res.get("signedURL") or res.get("signedUrl") or res.get("signed_url")
     if not url:
-        raise HTTPException(404, "PDF file not available.")
+        raise HTTPException(404, "File not available.")
     if url.startswith("/"):
         url = config.SUPABASE_URL.rstrip("/") + url
-    return {"url": url}
+    return {"url": url, "kind": "pdf" if ext == ".pdf" else "docx"}
 
 
 @router.delete("/{document_id}")
@@ -226,9 +250,12 @@ def delete_document(document_id: str, user: User = CurrentUser):
     sb.table("documents").delete().eq("id", document_id).eq(
         "org_id", user.org_id
     ).execute()
-    try:  # remove the stored PDF too; ignore if it never existed
+    try:  # remove the stored original too; ignore if it never existed
         sb.storage.from_(STORAGE_BUCKET).remove(
-            [_pdf_storage_path(user.org_id, document_id)]
+            [
+                _storage_path(user.org_id, document_id, ".pdf"),
+                _storage_path(user.org_id, document_id, ".docx"),
+            ]
         )
     except Exception:  # noqa: BLE001
         pass

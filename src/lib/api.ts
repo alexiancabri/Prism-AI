@@ -95,7 +95,7 @@ export const api = {
   listDocuments: () => request<DocumentRow[]>("/documents"),
   getDocument: (id: string) => request<DocumentDetail>(`/documents/${id}`),
   getDocumentFile: (id: string) =>
-    request<{ url: string }>(`/documents/${id}/file`),
+    request<{ url: string; kind: "pdf" | "docx" }>(`/documents/${id}/file`),
   deleteDocument: (id: string) =>
     request<{ deleted: string }>(`/documents/${id}`, { method: "DELETE" }),
   uploadDocument: (file: File) => {
