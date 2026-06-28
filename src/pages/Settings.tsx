@@ -33,12 +33,12 @@ export default function Settings() {
     "w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-neutral-300";
 
   return (
-    <div className="relative z-10 mx-auto max-w-2xl px-8 py-8">
-        <header className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-100">
+    <div className="relative z-10 mx-auto max-w-2xl px-8 py-10">
+        <header className="mb-9">
+          <h1 className="text-[1.75rem] font-semibold tracking-tight text-[var(--text)]">
             Settings
           </h1>
-          <p className="mt-1 text-sm text-neutral-400">
+          <p className="mt-1.5 text-sm text-[var(--text-muted)]">
             Manage your organization and account.
           </p>
         </header>

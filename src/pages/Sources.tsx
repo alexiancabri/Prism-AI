@@ -126,15 +126,15 @@ export default function Sources() {
   }
 
   const liveCardCls =
-    "rounded-xl border border-white/10 bg-white/[0.02] p-5 text-left transition-colors hover:border-[#3b82f6]/40 hover:bg-[#3b82f6]/[0.04]";
+    "rounded-xl border border-[var(--hairline)] bg-[var(--bg-card)] p-5 text-left transition-colors hover:border-[rgba(59,130,246,0.4)] hover:bg-[rgba(59,130,246,0.04)]";
 
   return (
     <div className="relative z-10 mx-auto max-w-5xl px-8 py-8">
-        <header className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-100">
+        <header className="mb-9">
+          <h1 className="text-[1.75rem] font-semibold tracking-tight text-[var(--text)]">
             Sources
           </h1>
-          <p className="mt-1 text-sm text-neutral-400">
+          <p className="mt-1.5 text-sm text-[var(--text-muted)]">
             Connect a source or upload documents to index them for Q&amp;A.
           </p>
         </header>
@@ -145,7 +145,7 @@ export default function Sources() {
             return (
             <div
               key={s.name}
-              className="rounded-xl border border-white/10 bg-white/[0.02] p-5 opacity-80"
+              className="rounded-xl border border-[var(--hairline)] bg-[var(--bg-card)] p-5 opacity-80"
             >
               <Logo />
               <h3 className="mt-3 font-medium text-neutral-100">{s.name}</h3>

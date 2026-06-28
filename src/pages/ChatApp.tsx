@@ -7,7 +7,6 @@ import {
   X,
   FileText,
   Loader2,
-  MessagesSquare,
   Maximize2,
   Minimize2,
   ExternalLink,
@@ -16,9 +15,16 @@ import {
   ListChecks,
   Quote,
   ArrowUpRight,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { api, type Citation, type Message, type DocumentDetail } from "@/lib/api";
+import {
+  api,
+  type Citation,
+  type Message,
+  type Conversation,
+  type DocumentDetail,
+} from "@/lib/api";
 import { makeHighlighter, pageFromLocation } from "@/lib/pdf";
 import { highlightDocParagraph } from "@/lib/docx";
 import { cn } from "@/lib/utils";
@@ -430,6 +436,21 @@ export default function ChatApp() {
     setPending(null);
   }
 
+  async function deleteConversation(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    // Optimistically drop it; reopen a blank chat if it was the active one.
+    queryClient.setQueryData<Conversation[]>(["conversations"], (old) =>
+      (old ?? []).filter((c) => c.id !== id),
+    );
+    if (activeId === id) newConversation();
+    try {
+      await api.deleteConversation(id);
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+    }
+  }
+
   // Prefill the composer with a suggested prompt and focus it so the user can
   // edit or just hit Enter.
   function pickSuggestion(prompt: string) {
@@ -506,38 +527,56 @@ export default function ChatApp() {
   return (
     <div className="relative z-10 flex h-screen">
         {/* Conversation history */}
-        <div className="flex w-64 shrink-0 flex-col border-r border-white/10 bg-black/40">
-          <div className="p-3">
+        <div className="flex w-64 shrink-0 flex-col border-r border-[var(--hairline)] bg-[var(--bg-card)]">
+          <div className="flex items-center justify-between px-3 pt-3.5 pb-2">
+            <span className="text-xs font-medium text-[var(--text-faint)]">
+              Chats
+            </span>
             <button
               onClick={newConversation}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-3 py-2 text-sm font-semibold text-white hover:bg-[#3b82f6]"
+              title="New chat"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-[var(--text-dim)] transition-colors hover:bg-white/5 hover:text-[var(--text)]"
             >
-              <Plus className="h-4 w-4" /> New chat
+              <Plus className="h-3.5 w-3.5" /> New
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-2 pb-3">
             {conversations.length === 0 && (
-              <p className="px-3 py-4 text-sm text-neutral-600">
+              <p className="px-3 py-4 text-sm text-[var(--text-faint)]">
                 No conversations yet.
               </p>
             )}
-            {conversations.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => {
-                  setActiveId(c.id);
-                  setActiveCitation(null);
-                }}
-                className={cn(
-                  "mb-1 flex w-full items-center gap-2 truncate rounded-lg px-3 py-2 text-left text-sm",
-                  activeId === c.id
-                    ? "bg-[#3b82f6]/10 text-[#3b82f6]"
-                    : "text-neutral-400 hover:bg-white/5",
-                )}
-              >
-                <MessagesSquare className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{c.title}</span>
-              </button>
+            {groupConversations(conversations).map((group) => (
+              <div key={group.label} className="mb-3">
+                <p className="px-3 pb-1 pt-2 text-[11px] font-medium text-[var(--text-faint)]">
+                  {group.label}
+                </p>
+                {group.items.map((c) => (
+                  <div key={c.id} className="group relative">
+                    <button
+                      onClick={() => {
+                        setActiveId(c.id);
+                        setActiveCitation(null);
+                      }}
+                      className={cn(
+                        "flex w-full items-center rounded-lg py-2 pl-3 pr-8 text-left text-sm transition-colors",
+                        activeId === c.id
+                          ? "bg-[rgba(59,130,246,0.1)] text-[var(--blue)]"
+                          : "text-[var(--text-dim)] hover:bg-white/5 hover:text-[var(--text)]",
+                      )}
+                    >
+                      <span className="truncate">{c.title}</span>
+                    </button>
+                    <button
+                      onClick={(e) => deleteConversation(c.id, e)}
+                      title="Delete conversation"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--text-faint)] opacity-0 transition-opacity hover:bg-white/10 hover:text-[var(--text)] focus:opacity-100 group-hover:opacity-100"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             ))}
           </div>
         </div>
@@ -577,7 +616,7 @@ export default function ChatApp() {
               {pending && (
                 <>
                   <div className="flex justify-end">
-                    <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-[#2563eb] px-4 py-2.5 text-sm text-white">
+                    <div className="max-w-[80%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-[var(--blue)] px-4 py-2.5 text-sm text-white">
                       {pending.question}
                     </div>
                   </div>
@@ -588,7 +627,7 @@ export default function ChatApp() {
           </div>
 
           {/* Composer */}
-          <div className="border-t border-white/10 px-6 py-4">
+          <div className="border-t border-[var(--hairline)] px-6 py-4">
             <div className="mx-auto flex max-w-2xl items-end gap-2">
               <textarea
                 ref={inputRef}
@@ -602,12 +641,12 @@ export default function ChatApp() {
                 }}
                 rows={1}
                 placeholder="Ask a question…"
-                className="max-h-40 flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-[#3b82f6]/60"
+                className="max-h-40 flex-1 resize-none rounded-xl border border-[var(--hairline-strong)] bg-[var(--bg-card)] px-4 py-2.5 text-sm text-[var(--text)] outline-none transition-colors placeholder:text-[var(--text-faint)] focus:border-[var(--blue)]"
               />
               <button
                 onClick={send}
                 disabled={!input.trim() || !!pending}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2563eb] text-white hover:bg-[#3b82f6] disabled:opacity-50"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--blue)] text-white transition-colors hover:bg-[var(--blue-strong)] disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -722,6 +761,37 @@ function greetingFor(hour: number): string {
   return "Good evening";
 }
 
+/** Bucket conversations (already sorted newest-first) into dated sections so
+ *  the history reads as a timeline instead of a flat truncated column. */
+function groupConversations(
+  convos: Conversation[],
+): { label: string; items: Conversation[] }[] {
+  const now = new Date();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  const dayMs = 86_400_000;
+  const buckets = [
+    { label: "Today", items: [] as Conversation[], min: startOfToday },
+    { label: "Yesterday", items: [] as Conversation[], min: startOfToday - dayMs },
+    {
+      label: "Previous 7 days",
+      items: [] as Conversation[],
+      min: startOfToday - 7 * dayMs,
+    },
+    { label: "Older", items: [] as Conversation[], min: -Infinity },
+  ];
+  for (const c of convos) {
+    const t = new Date(c.created_at).getTime();
+    (buckets.find((b) => t >= b.min) ?? buckets[3]).items.push(c);
+  }
+  return buckets
+    .filter((b) => b.items.length > 0)
+    .map(({ label, items }) => ({ label, items }));
+}
+
 /** Claude-style empty state: a glowing brand mark, a time-aware greeting, and
  *  clickable suggestion cards that prefill the composer. */
 function WelcomeScreen({ onPick }: { onPick: (prompt: string) => void }) {
@@ -735,7 +805,7 @@ function WelcomeScreen({ onPick }: { onPick: (prompt: string) => void }) {
     <div className="flex min-h-[62vh] flex-col items-center justify-center px-4 text-center">
       {/* Glowing brand mark */}
       <div className="relative mb-7">
-        <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-[#3b82f6] to-[#7c5cff] opacity-30 blur-2xl" />
+        <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-[var(--blue)] to-[var(--blue-dim)] opacity-30 blur-2xl" />
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
@@ -845,7 +915,7 @@ function MessageBubble({
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-[#2563eb] px-4 py-2.5 text-sm text-white">
+        <div className="max-w-[80%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-[var(--blue)] px-4 py-2.5 text-sm text-white">
           {message.content}
         </div>
       </div>
@@ -888,14 +958,14 @@ function AssistantBubble({
   const citations = message.citations ?? [];
   return (
     <div className="space-y-3">
-      <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-neutral-200">
+      <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-sm border border-[var(--hairline)] bg-[var(--bg-card)] px-4 py-3 text-sm leading-relaxed text-[var(--text-dim)]">
         {shown}
         {!done && <span className="type-caret" aria-hidden="true" />}
       </div>
 
       {citations.length > 0 && done && (
         <div className="thinking-fade max-w-[85%]">
-          <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-neutral-600">
+          <div className="mb-2 text-xs font-medium text-[var(--text-faint)]">
             Sources
           </div>
           <div className="flex flex-wrap gap-2">
@@ -909,19 +979,19 @@ function AssistantBubble({
                   onClick={() => onCitationClick(c)}
                   title={c.text}
                   className={cn(
-                    "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:border-[#3b82f6]/50 hover:bg-[#3b82f6]/[0.06]",
+                    "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:border-[rgba(59,130,246,0.5)] hover:bg-[rgba(59,130,246,0.06)]",
                     isActive
-                      ? "border-[#3b82f6]/60 bg-[#3b82f6]/10 text-[#bfd4ff]"
-                      : "border-white/10 bg-white/[0.02] text-neutral-400",
+                      ? "border-[rgba(59,130,246,0.6)] bg-[rgba(59,130,246,0.1)] text-[#bfd4ff]"
+                      : "border-[var(--hairline-strong)] bg-[var(--bg-card)] text-[var(--text-muted)]",
                   )}
                 >
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#3b82f6]/20 text-[10px] font-semibold text-[#3b82f6]">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgba(59,130,246,0.2)] text-[10px] font-semibold text-[var(--blue)]">
                     {i + 1}
                   </span>
-                  <FileText className="h-3 w-3 shrink-0 text-neutral-500" />
+                  <FileText className="h-3 w-3 shrink-0 text-[var(--text-faint)]" />
                   <span className="truncate font-medium">{c.document_name}</span>
-                  <span className="shrink-0 text-neutral-600">·</span>
-                  <span className="shrink-0 whitespace-nowrap text-neutral-500">
+                  <span className="shrink-0 text-[var(--text-faint)]">·</span>
+                  <span className="shrink-0 whitespace-nowrap text-[var(--text-muted)]">
                     {c.location}
                   </span>
                 </button>

@@ -121,6 +121,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ title }),
     }),
+  deleteConversation: (conversationId: string) =>
+    request<{ ok: boolean }>(`/conversations/${conversationId}`, {
+      method: "DELETE",
+    }),
   listMessages: (conversationId: string) =>
     request<Message[]>(`/conversations/${conversationId}/messages`),
   addMessage: (

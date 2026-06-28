@@ -68,8 +68,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   cn(
                     "group relative flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
                     isActive
-                      ? "bg-[#3b82f6]/10 text-[#3b82f6]"
-                      : "text-neutral-400 hover:bg-white/5 hover:text-neutral-100",
+                      ? "bg-[rgba(59,130,246,0.12)] text-[var(--blue)]"
+                      : "text-[var(--text-muted)] hover:bg-white/5 hover:text-[var(--text)]",
                   )
                 }
               >
@@ -88,7 +88,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           >
             <div
               title={user?.email ?? undefined}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#3b82f6] to-[#7c5cff] text-sm font-semibold text-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--blue)] text-sm font-semibold text-white"
             >
               {(user?.email ?? "?").charAt(0).toUpperCase()}
             </div>

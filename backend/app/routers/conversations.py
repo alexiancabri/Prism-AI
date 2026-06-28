@@ -73,6 +73,17 @@ def list_messages(conversation_id: str, user: User = CurrentUser):
     return res.data
 
 
+@router.delete("/{conversation_id}")
+def delete_conversation(conversation_id: str, user: User = CurrentUser):
+    sb = get_supabase()
+    _assert_owned(sb, conversation_id, user.org_id)
+    sb.table("messages").delete().eq("conversation_id", conversation_id).execute()
+    sb.table("conversations").delete().eq("id", conversation_id).eq(
+        "org_id", user.org_id
+    ).execute()
+    return {"ok": True}
+
+
 @router.post("/{conversation_id}/messages")
 def create_message(
     conversation_id: str, body: CreateMessage, user: User = CurrentUser
