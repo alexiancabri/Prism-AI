@@ -16,6 +16,8 @@ import {
   Quote,
   ArrowUpRight,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -50,12 +52,17 @@ function Highlighted({ content, quote }: { content: string; quote: string }) {
  *  highlighted; falls back to extracted-text chunks for non-PDF documents or
  *  ones uploaded before the original file was stored. */
 function DocumentPreview({
-  citation,
+  citations,
+  index,
+  onIndexChange,
   onClose,
 }: {
-  citation: Citation;
+  citations: Citation[];
+  index: number;
+  onIndexChange: (i: number) => void;
   onClose: () => void;
 }) {
+  const citation = citations[index];
   const { data, isLoading } = useQuery({
     queryKey: ["document", citation.document_id],
     queryFn: () => api.getDocument(citation.document_id),
@@ -242,6 +249,34 @@ function DocumentPreview({
         </div>
       </div>
 
+      {/* Jump between the cited locations within this document. */}
+      {citations.length > 1 && (
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-2">
+          <span className="truncate text-xs text-[var(--text-muted)]">
+            Reference {index + 1} of {citations.length}
+            <span className="text-[var(--text-faint)]"> · {citation.location}</span>
+          </span>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              onClick={() =>
+                onIndexChange((index - 1 + citations.length) % citations.length)
+              }
+              title="Previous reference"
+              className="rounded-md p-1 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => onIndexChange((index + 1) % citations.length)}
+              title="Next reference"
+              className="rounded-md p-1 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div
         ref={bodyRef}
         className={cn(
@@ -324,7 +359,12 @@ function DocxView({
   }, [url]);
 
   useEffect(() => {
-    if (html && ref.current) highlightDocParagraph(ref.current, quote);
+    if (html && ref.current) {
+      highlightDocParagraph(ref.current, quote);
+      ref.current
+        .querySelector(".doc-hl")
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
   }, [html, quote]);
 
   if (html === null) {
@@ -397,7 +437,12 @@ export default function ChatApp() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState<PendingExchange | null>(null);
-  const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
+  // The document panel shows one document's cited locations; index selects
+  // which reference is highlighted, navigable via prev/next in the panel.
+  const [activeRefs, setActiveRefs] = useState<{
+    citations: Citation[];
+    index: number;
+  } | null>(null);
   // Id of the freshly generated assistant message to reveal with a typewriter
   // effect (cleared once done, so switching chats / reloads don't re-animate).
   const [typingId, setTypingId] = useState<string | null>(null);
@@ -432,8 +477,14 @@ export default function ChatApp() {
 
   function newConversation() {
     setActiveId(null);
-    setActiveCitation(null);
+    setActiveRefs(null);
     setPending(null);
+  }
+
+  // Open the document panel on a document's cited locations (one chip = one
+  // document; navigate its references inside the panel).
+  function openRefs(cits: Citation[]) {
+    setActiveRefs({ citations: cits, index: 0 });
   }
 
   async function deleteConversation(id: string, e: React.MouseEvent) {
@@ -556,7 +607,7 @@ export default function ChatApp() {
                     <button
                       onClick={() => {
                         setActiveId(c.id);
-                        setActiveCitation(null);
+                        setActiveRefs(null);
                       }}
                       className={cn(
                         "flex w-full items-center rounded-lg py-2 pl-3 pr-8 text-left text-sm transition-colors",
@@ -605,8 +656,8 @@ export default function ChatApp() {
                 <MessageBubble
                   key={m.id}
                   message={m}
-                  onCitationClick={setActiveCitation}
-                  activeCitation={activeCitation}
+                  onOpenRefs={openRefs}
+                  activeDocId={activeRefs?.citations[0]?.document_id ?? null}
                   animate={m.id === typingId}
                   onTick={scrollToBottom}
                   onTypingDone={() => setTypingId(null)}
@@ -655,10 +706,14 @@ export default function ChatApp() {
         </div>
 
         {/* Document preview (slides in) */}
-        {activeCitation && (
+        {activeRefs && (
           <DocumentPreview
-            citation={activeCitation}
-            onClose={() => setActiveCitation(null)}
+            citations={activeRefs.citations}
+            index={activeRefs.index}
+            onIndexChange={(i) =>
+              setActiveRefs((r) => (r ? { ...r, index: i } : r))
+            }
+            onClose={() => setActiveRefs(null)}
           />
         )}
     </div>
@@ -899,15 +954,15 @@ function useTypewriter(
 
 function MessageBubble({
   message,
-  onCitationClick,
-  activeCitation,
+  onOpenRefs,
+  activeDocId,
   animate,
   onTick,
   onTypingDone,
 }: {
   message: Message;
-  onCitationClick: (c: Citation) => void;
-  activeCitation: Citation | null;
+  onOpenRefs: (citations: Citation[]) => void;
+  activeDocId: string | null;
   animate: boolean;
   onTick: () => void;
   onTypingDone: () => void;
@@ -934,8 +989,8 @@ function MessageBubble({
   return (
     <AssistantBubble
       message={message}
-      onCitationClick={onCitationClick}
-      activeCitation={activeCitation}
+      onOpenRefs={onOpenRefs}
+      activeDocId={activeDocId}
       animate={animate}
       onTick={onTick}
       onTypingDone={onTypingDone}
@@ -943,17 +998,37 @@ function MessageBubble({
   );
 }
 
+/** Collapse a message's citations to one entry per document, preserving order
+ *  and dropping exact-duplicate locations within a document. */
+function groupCitationsByDoc(citations: Citation[]): Citation[][] {
+  const groups: Citation[][] = [];
+  const byDoc = new Map<string, Citation[]>();
+  for (const c of citations) {
+    let arr = byDoc.get(c.document_id);
+    if (!arr) {
+      arr = [];
+      byDoc.set(c.document_id, arr);
+      groups.push(arr);
+    }
+    const dupe = arr.some(
+      (x) => x.chunk_id === c.chunk_id && x.text === c.text,
+    );
+    if (!dupe) arr.push(c);
+  }
+  return groups;
+}
+
 function AssistantBubble({
   message,
-  onCitationClick,
-  activeCitation,
+  onOpenRefs,
+  activeDocId,
   animate,
   onTick,
   onTypingDone,
 }: {
   message: Message;
-  onCitationClick: (c: Citation) => void;
-  activeCitation: Citation | null;
+  onOpenRefs: (citations: Citation[]) => void;
+  activeDocId: string | null;
   animate: boolean;
   onTick: () => void;
   onTypingDone: () => void;
@@ -965,6 +1040,7 @@ function AssistantBubble({
     onTypingDone,
   );
   const citations = message.citations ?? [];
+  const groups = groupCitationsByDoc(citations);
   return (
     <div className="flex gap-3">
       <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--hairline-strong)] bg-[var(--bg-card)]">
@@ -980,23 +1056,25 @@ function AssistantBubble({
           {!done && <span className="type-caret" aria-hidden="true" />}
         </div>
 
-        {citations.length > 0 && done && (
+        {groups.length > 0 && done && (
           <div className="thinking-fade mt-3">
             <div className="mb-2 text-xs font-medium text-[var(--text-faint)]">
-              {citations.length} source{citations.length > 1 ? "s" : ""}
+              {groups.length} source{groups.length > 1 ? "s" : ""}
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {citations.map((c, i) => {
-                const isActive =
-                  activeCitation?.chunk_id === c.chunk_id &&
-                  activeCitation?.text === c.text;
+              {groups.map((group, i) => {
+                const doc = group[0];
+                const isActive = activeDocId === doc.document_id;
+                const refs = group.length;
                 const preview =
-                  c.text.length > 180 ? `${c.text.slice(0, 180).trim()}…` : c.text;
+                  doc.text.length > 180
+                    ? `${doc.text.slice(0, 180).trim()}…`
+                    : doc.text;
                 return (
                   <button
-                    key={`${c.chunk_id}-${i}`}
-                    onClick={() => onCitationClick(c)}
-                    aria-label={`Source ${i + 1}: ${c.document_name}, ${c.location}`}
+                    key={doc.document_id}
+                    onClick={() => onOpenRefs(group)}
+                    aria-label={`Source ${i + 1}: ${doc.document_name}, ${refs} reference${refs > 1 ? "s" : ""}`}
                     className={cn(
                       "group/cite relative inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs transition-colors hover:border-[rgba(59,130,246,0.5)] hover:bg-[rgba(59,130,246,0.06)]",
                       isActive
@@ -1008,15 +1086,14 @@ function AssistantBubble({
                       {i + 1}
                     </span>
                     <FileText className="h-3 w-3 shrink-0 text-[var(--text-faint)]" />
-                    <span className="max-w-[140px] truncate font-medium">
-                      {c.document_name}
+                    <span className="max-w-[160px] truncate font-medium">
+                      {doc.document_name}
                     </span>
                     <span className="shrink-0 text-[var(--text-faint)]">·</span>
                     <span className="shrink-0 whitespace-nowrap text-[var(--text-muted)]">
-                      {c.location}
+                      {refs > 1 ? `${refs} refs` : doc.location}
                     </span>
-                    {/* Hover preview of the actual cited snippet — distinguishes
-                        chips that share a file + location. */}
+                    {/* Hover preview of the first cited snippet from this doc. */}
                     <span className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 hidden w-72 whitespace-normal rounded-lg border border-[var(--hairline-strong)] bg-[#0c0c0e] p-2.5 text-left text-xs leading-relaxed text-[var(--text-dim)] shadow-xl group-hover/cite:block">
                       {preview}
                     </span>
