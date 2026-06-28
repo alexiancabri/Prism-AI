@@ -411,7 +411,7 @@ export default function ChatApp() {
     queryFn: api.listConversations,
   });
 
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ["messages", activeId],
     queryFn: () => api.listMessages(activeId as string),
     enabled: !!activeId,
@@ -546,8 +546,16 @@ export default function ChatApp() {
         <div className="flex min-w-0 flex-1 flex-col">
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6">
             <div className="mx-auto max-w-2xl space-y-6">
-              {messages.length === 0 && !pending && (
+              {/* Welcome only when no conversation is open — never flash it
+                  while an existing chat's messages are still fetching. */}
+              {!activeId && !pending && (
                 <WelcomeScreen onPick={pickSuggestion} />
+              )}
+
+              {activeId && messagesLoading && messages.length === 0 && (
+                <div className="flex justify-center pt-24 text-neutral-600">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                </div>
               )}
 
               {messages.map((m) => (
