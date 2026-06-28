@@ -18,6 +18,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  PanelLeftOpen,
+  PanelLeftClose,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -55,11 +57,15 @@ function DocumentPreview({
   citations,
   index,
   onIndexChange,
+  chatCollapsed,
+  onToggleChat,
   onClose,
 }: {
   citations: Citation[];
   index: number;
   onIndexChange: (i: number) => void;
+  chatCollapsed: boolean;
+  onToggleChat: () => void;
   onClose: () => void;
 }) {
   const citation = citations[index];
@@ -190,26 +196,30 @@ function DocumentPreview({
 
   return (
     <div
-      style={{ width }}
+      style={chatCollapsed ? undefined : { width }}
       className={cn(
-        "relative flex h-full shrink-0 flex-col border-l border-white/10 bg-black/40",
+        "relative flex h-full flex-col border-l border-white/10 bg-black/40",
+        chatCollapsed ? "min-w-0 flex-1" : "shrink-0",
         !dragging && "transition-[width] duration-200 ease-in-out",
       )}
     >
-      {/* Drag handle on the chat↔document divider */}
-      <div
-        onPointerDown={startDrag}
-        onDoubleClick={toggleExpand}
-        title="Drag to resize · double-click to expand"
-        className="group absolute left-0 top-0 z-20 flex h-full w-2 -translate-x-1/2 cursor-col-resize items-center justify-center"
-      >
+      {/* Drag handle on the chat↔document divider (only when the chat is
+          visible — collapsed, the panel fills the space and isn't resizable). */}
+      {!chatCollapsed && (
         <div
-          className={cn(
-            "h-full w-px transition-colors",
-            dragging ? "bg-[#3b82f6]" : "bg-white/10 group-hover:bg-[#3b82f6]/60",
-          )}
-        />
-      </div>
+          onPointerDown={startDrag}
+          onDoubleClick={toggleExpand}
+          title="Drag to resize · double-click to expand"
+          className="group absolute left-0 top-0 z-20 flex h-full w-2 -translate-x-1/2 cursor-col-resize items-center justify-center"
+        >
+          <div
+            className={cn(
+              "h-full w-px transition-colors",
+              dragging ? "bg-[#3b82f6]" : "bg-white/10 group-hover:bg-[#3b82f6]/60",
+            )}
+          />
+        </div>
+      )}
 
       <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <div className="flex min-w-0 items-center gap-2">
@@ -219,6 +229,17 @@ function DocumentPreview({
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={onToggleChat}
+            title={chatCollapsed ? "Show chat" : "Hide chat"}
+            className="rounded-md p-1.5 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
+          >
+            {chatCollapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </button>
           {fileData?.url && (
             <button
               onClick={openOriginal}
@@ -228,17 +249,19 @@ function DocumentPreview({
               <ExternalLink className="h-4 w-4" />
             </button>
           )}
-          <button
-            onClick={toggleExpand}
-            title={expanded ? "Collapse panel" : "Expand panel"}
-            className="rounded-md p-1.5 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
-          >
-            {expanded ? (
-              <Minimize2 className="h-4 w-4" />
-            ) : (
-              <Maximize2 className="h-4 w-4" />
-            )}
-          </button>
+          {!chatCollapsed && (
+            <button
+              onClick={toggleExpand}
+              title={expanded ? "Collapse panel" : "Expand panel"}
+              className="rounded-md p-1.5 text-neutral-500 hover:bg-white/5 hover:text-neutral-200"
+            >
+              {expanded ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
+            </button>
+          )}
           <button
             onClick={onClose}
             title="Close"
@@ -446,8 +469,16 @@ export default function ChatApp() {
   // Id of the freshly generated assistant message to reveal with a typewriter
   // effect (cleared once done, so switching chats / reloads don't re-animate).
   const [typingId, setTypingId] = useState<string | null>(null);
+  // Collapse the chat column to give the document room. Auto-collapses when a
+  // source opens and restores when it closes; the panel has a manual toggle.
+  const [chatCollapsed, setChatCollapsed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const sourceOpen = !!activeRefs;
+  useEffect(() => {
+    setChatCollapsed(sourceOpen);
+  }, [sourceOpen]);
 
   function scrollToBottom() {
     const el = scrollRef.current;
@@ -633,7 +664,7 @@ export default function ChatApp() {
         </div>
 
         {/* Chat area */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className={cn("flex min-w-0 flex-1 flex-col", chatCollapsed && "hidden")}>
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6">
             <div className="mx-auto max-w-2xl space-y-6">
               {/* Welcome only when no conversation is open — never flash it
@@ -713,6 +744,8 @@ export default function ChatApp() {
             onIndexChange={(i) =>
               setActiveRefs((r) => (r ? { ...r, index: i } : r))
             }
+            chatCollapsed={chatCollapsed}
+            onToggleChat={() => setChatCollapsed((v) => !v)}
             onClose={() => setActiveRefs(null)}
           />
         )}
