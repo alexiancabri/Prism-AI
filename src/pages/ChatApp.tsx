@@ -912,11 +912,20 @@ function MessageBubble({
   onTick: () => void;
   onTypingDone: () => void;
 }) {
+  const { user } = useAuth();
+
   if (message.role === "user") {
+    const initial = (user?.email ?? "Y").charAt(0).toUpperCase();
     return (
-      <div className="flex justify-end">
-        <div className="max-w-[80%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-[var(--blue)] px-4 py-2.5 text-sm text-white">
-          {message.content}
+      <div className="flex gap-3">
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--blue)] text-xs font-semibold text-white">
+          {initial}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 text-xs font-medium text-[var(--text-muted)]">You</div>
+          <div className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--text)]">
+            {message.content}
+          </div>
         </div>
       </div>
     );
@@ -957,49 +966,67 @@ function AssistantBubble({
   );
   const citations = message.citations ?? [];
   return (
-    <div className="space-y-3">
-      <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-sm border border-[var(--hairline)] bg-[var(--bg-card)] px-4 py-3 text-sm leading-relaxed text-[var(--text-dim)]">
-        {shown}
-        {!done && <span className="type-caret" aria-hidden="true" />}
-      </div>
-
-      {citations.length > 0 && done && (
-        <div className="thinking-fade max-w-[85%]">
-          <div className="mb-2 text-xs font-medium text-[var(--text-faint)]">
-            Sources
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {citations.map((c, i) => {
-              const isActive =
-                activeCitation?.chunk_id === c.chunk_id &&
-                activeCitation?.text === c.text;
-              return (
-                <button
-                  key={`${c.chunk_id}-${i}`}
-                  onClick={() => onCitationClick(c)}
-                  title={c.text}
-                  className={cn(
-                    "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:border-[rgba(59,130,246,0.5)] hover:bg-[rgba(59,130,246,0.06)]",
-                    isActive
-                      ? "border-[rgba(59,130,246,0.6)] bg-[rgba(59,130,246,0.1)] text-[#bfd4ff]"
-                      : "border-[var(--hairline-strong)] bg-[var(--bg-card)] text-[var(--text-muted)]",
-                  )}
-                >
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgba(59,130,246,0.2)] text-[10px] font-semibold text-[var(--blue)]">
-                    {i + 1}
-                  </span>
-                  <FileText className="h-3 w-3 shrink-0 text-[var(--text-faint)]" />
-                  <span className="truncate font-medium">{c.document_name}</span>
-                  <span className="shrink-0 text-[var(--text-faint)]">·</span>
-                  <span className="shrink-0 whitespace-nowrap text-[var(--text-muted)]">
-                    {c.location}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+    <div className="flex gap-3">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--hairline-strong)] bg-[var(--bg-card)]">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3 L21 20 L3 20 Z" stroke="#fafafa" strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M7 20 L15.5 6" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="mb-1 text-xs font-medium text-[var(--text-muted)]">Prism</div>
+        <div className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--text-dim)]">
+          {shown}
+          {!done && <span className="type-caret" aria-hidden="true" />}
         </div>
-      )}
+
+        {citations.length > 0 && done && (
+          <div className="thinking-fade mt-3">
+            <div className="mb-2 text-xs font-medium text-[var(--text-faint)]">
+              {citations.length} source{citations.length > 1 ? "s" : ""}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {citations.map((c, i) => {
+                const isActive =
+                  activeCitation?.chunk_id === c.chunk_id &&
+                  activeCitation?.text === c.text;
+                const preview =
+                  c.text.length > 180 ? `${c.text.slice(0, 180).trim()}…` : c.text;
+                return (
+                  <button
+                    key={`${c.chunk_id}-${i}`}
+                    onClick={() => onCitationClick(c)}
+                    aria-label={`Source ${i + 1}: ${c.document_name}, ${c.location}`}
+                    className={cn(
+                      "group/cite relative inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs transition-colors hover:border-[rgba(59,130,246,0.5)] hover:bg-[rgba(59,130,246,0.06)]",
+                      isActive
+                        ? "border-[rgba(59,130,246,0.6)] bg-[rgba(59,130,246,0.1)] text-[#bfd4ff]"
+                        : "border-[var(--hairline-strong)] bg-[var(--bg-card)] text-[var(--text-muted)]",
+                    )}
+                  >
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-[rgba(59,130,246,0.2)] text-[10px] font-semibold text-[var(--blue)]">
+                      {i + 1}
+                    </span>
+                    <FileText className="h-3 w-3 shrink-0 text-[var(--text-faint)]" />
+                    <span className="max-w-[140px] truncate font-medium">
+                      {c.document_name}
+                    </span>
+                    <span className="shrink-0 text-[var(--text-faint)]">·</span>
+                    <span className="shrink-0 whitespace-nowrap text-[var(--text-muted)]">
+                      {c.location}
+                    </span>
+                    {/* Hover preview of the actual cited snippet — distinguishes
+                        chips that share a file + location. */}
+                    <span className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 hidden w-72 whitespace-normal rounded-lg border border-[var(--hairline-strong)] bg-[#0c0c0e] p-2.5 text-left text-xs leading-relaxed text-[var(--text-dim)] shadow-xl group-hover/cite:block">
+                      {preview}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
