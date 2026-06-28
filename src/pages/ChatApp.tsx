@@ -1031,8 +1031,10 @@ function MessageBubble({
   );
 }
 
-/** Collapse a message's citations to one entry per document, preserving order
- *  and dropping exact-duplicate locations within a document. */
+/** Collapse a message's citations to one entry per document, then to one
+ *  reference per passage: multiple hits in the same chunk (or same location)
+ *  are the same span of the document, so we keep only the first. This avoids
+ *  stepping through near-identical "part 5 / part 5" references. */
 function groupCitationsByDoc(citations: Citation[]): Citation[][] {
   const groups: Citation[][] = [];
   const byDoc = new Map<string, Citation[]>();
@@ -1043,10 +1045,10 @@ function groupCitationsByDoc(citations: Citation[]): Citation[][] {
       byDoc.set(c.document_id, arr);
       groups.push(arr);
     }
-    const dupe = arr.some(
-      (x) => x.chunk_id === c.chunk_id && x.text === c.text,
+    const samePassage = arr.some(
+      (x) => x.chunk_id === c.chunk_id || x.location === c.location,
     );
-    if (!dupe) arr.push(c);
+    if (!samePassage) arr.push(c);
   }
   return groups;
 }
