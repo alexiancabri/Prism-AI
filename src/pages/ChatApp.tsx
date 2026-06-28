@@ -553,8 +553,12 @@ export default function ChatApp() {
               )}
 
               {activeId && messagesLoading && messages.length === 0 && (
-                <div className="flex justify-center pt-24 text-neutral-600">
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                <div className="flex items-center justify-center gap-3 pt-24">
+                  <span className="thinking-orb" aria-hidden="true" />
+                  <span className="thinking-text text-sm">
+                    Gathering the conversation
+                    <span className="thinking-dots" />
+                  </span>
                 </div>
               )}
 
