@@ -12,8 +12,35 @@ import {
   Zap,
   Search,
   Check,
+  Send,
 } from "lucide-react";
 import "@/styles/cinematic.css";
+
+/* ---------- typewriter ---------- */
+function useTyped(full: string, start: boolean, ms = 18) {
+  const [shown, setShown] = useState("");
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    if (!start) {
+      setShown("");
+      setDone(false);
+      return;
+    }
+    setShown("");
+    setDone(false);
+    let i = 0;
+    const id = window.setInterval(() => {
+      i += 1;
+      setShown(full.slice(0, i));
+      if (i >= full.length) {
+        window.clearInterval(id);
+        setDone(true);
+      }
+    }, ms);
+    return () => window.clearInterval(id);
+  }, [full, start]);
+  return { shown, done };
+}
 
 /* ---------- brand mark ---------- */
 function Mark({ size = 22 }: { size?: number }) {
@@ -70,6 +97,7 @@ function Nav({ onStart, onLogin }: { onStart: () => void; onLogin: () => void })
         <div className="lp-nav-links">
           <a href="#features">Product</a>
           <a href="#how">How it works</a>
+          <a href="#demo">Demo</a>
           <a href="#security">Security</a>
           <a href="#pricing">Pricing</a>
         </div>
@@ -85,7 +113,16 @@ function Nav({ onStart, onLogin }: { onStart: () => void; onLogin: () => void })
 }
 
 /* ---------- product mock ---------- */
+const HERO_ANSWER =
+  "The Acme MSA auto-renews for 12 months unless either party gives 60 days’ written notice before the term ends (Section 8.2).";
+
 function ProductMock() {
+  const [start, setStart] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setStart(true), 950);
+    return () => clearTimeout(t);
+  }, []);
+  const { shown, done } = useTyped(HERO_ANSWER, start, 20);
   return (
     <div className="lp-mock">
       <div className="lp-mock-bar">
@@ -112,14 +149,28 @@ function ProductMock() {
             <div>
               <div className="lp-mock-name">Prism</div>
               <div className="lp-mock-text">
-                The Acme MSA auto-renews for 12 months unless either party gives{" "}
-                <strong style={{ color: "#fafafa", fontWeight: 600 }}>60 days’ written notice</strong> before the term ends (Section 8.2).
+                {done ? (
+                  <>
+                    The Acme MSA auto-renews for 12 months unless either party gives{" "}
+                    <strong style={{ color: "#fafafa", fontWeight: 600 }}>60 days’ written notice</strong> before the term ends (Section 8.2).
+                  </>
+                ) : (
+                  <>
+                    {shown}
+                    {start && <span className="lp-caret" />}
+                  </>
+                )}
               </div>
-              <span className="lp-mock-chip">
+              <motion.span
+                className="lp-mock-chip"
+                initial={{ opacity: 0, y: 4 }}
+                animate={done ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.4 }}
+              >
                 <span className="n">1</span>
                 <FileText size={12} />
                 Acme_MSA.pdf <span style={{ color: "#5a5a63" }}>· p.7</span>
-              </span>
+              </motion.span>
             </div>
           </div>
         </div>
@@ -132,6 +183,172 @@ function ProductMock() {
           8.3 Termination for cause requires…
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ---------- live interactive demo ---------- */
+type DemoQA = {
+  q: string;
+  keywords: string[];
+  a: string;
+  loc: string;
+  snippet: string;
+};
+
+const DEMO_QA: DemoQA[] = [
+  {
+    q: "What’s our notice period?",
+    keywords: ["notice", "renew", "cancel", "term", "expire"],
+    a: "The Acme MSA auto-renews for successive 12-month terms unless either party gives 60 days’ written notice before the current term ends.",
+    loc: "p.7 · §8.2",
+    snippet: "8.2 The term auto-renews for successive 12-month periods unless either party provides 60 days’ written notice.",
+  },
+  {
+    q: "What’s the liability cap?",
+    keywords: ["liab", "cap", "damages", "indemn", "limit"],
+    a: "Aggregate liability is capped at the total fees paid in the 12 months preceding the claim — excluding breaches of confidentiality, which are uncapped.",
+    loc: "p.9 · §11.3",
+    snippet: "11.3 Each party’s aggregate liability shall not exceed the fees paid in the preceding twelve (12) months, save for breaches of confidentiality.",
+  },
+  {
+    q: "Can we terminate early?",
+    keywords: ["terminat", "exit", "early", "cause", "breach"],
+    a: "Either party may terminate for cause with a 30-day cure period; termination for convenience requires 90 days’ written notice.",
+    loc: "p.8 · §9.1",
+    snippet: "9.1 Either party may terminate for cause upon 30 days’ notice if the breach remains uncured; for convenience upon 90 days’ notice.",
+  },
+  {
+    q: "How is our data protected?",
+    keywords: ["data", "privacy", "gdpr", "breach", "secur", "protect"],
+    a: "Acme processes personal data under the DPA in Annex B and must notify you of any personal-data breach within 72 hours.",
+    loc: "p.12 · §14.2",
+    snippet: "14.2 Acme shall notify Customer of any Personal Data Breach without undue delay and in any event within 72 hours.",
+  },
+];
+
+function matchDemo(input: string): DemoQA {
+  const q = input.toLowerCase();
+  let best = DEMO_QA[0];
+  let bestScore = 0;
+  for (const item of DEMO_QA) {
+    const score = item.keywords.reduce((n, k) => (q.includes(k) ? n + 1 : n), 0);
+    if (score > bestScore) {
+      bestScore = score;
+      best = item;
+    }
+  }
+  return best;
+}
+
+function LiveDemo() {
+  const [input, setInput] = useState("");
+  const [question, setQuestion] = useState<string | null>(null);
+  const [answer, setAnswer] = useState<DemoQA>(DEMO_QA[0]);
+  const [phase, setPhase] = useState<"idle" | "thinking" | "answer">("idle");
+  const timer = useRef<number>();
+
+  const { shown, done } = useTyped(answer.a, phase === "answer", 16);
+
+  function ask(text: string) {
+    const t = text.trim();
+    if (!t) return;
+    window.clearTimeout(timer.current);
+    setInput("");
+    setQuestion(t);
+    setAnswer(matchDemo(t));
+    setPhase("thinking");
+    timer.current = window.setTimeout(() => setPhase("answer"), 720);
+  }
+
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  return (
+    <div className="lp-demo">
+      <div className="lp-demo-card">
+        <div className="lp-demo-head">
+          <span className="live" /> Live demo · sample contract (Acme_MSA.pdf)
+        </div>
+        <div className="lp-demo-body">
+          {question === null ? (
+            <p className="lp-demo-empty">
+              Ask a question about the sample contract below — Prism answers from the
+              document, with the exact clause it came from.
+            </p>
+          ) : (
+            <>
+              <div className="lp-demo-row">
+                <span className="lp-demo-av" style={{ background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 600 }}>
+                  A
+                </span>
+                <div>
+                  <div className="lp-demo-name">You</div>
+                  <div className="lp-demo-text">{question}</div>
+                </div>
+              </div>
+              <div className="lp-demo-row">
+                <span className="lp-demo-av" style={{ border: "1px solid rgba(255,255,255,0.14)", background: "#0c0c0f" }}>
+                  <Mark size={14} />
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div className="lp-demo-name">Prism</div>
+                  {phase === "thinking" ? (
+                    <div className="lp-demo-think">
+                      <span className="lp-demo-orb" /> Searching the document…
+                    </div>
+                  ) : (
+                    <>
+                      <div className="lp-demo-text">
+                        {shown}
+                        {!done && <span className="lp-caret" />}
+                      </div>
+                      {done && (
+                        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+                          <span className="lp-demo-chip">
+                            <span className="n">1</span>
+                            <FileText size={12} /> Acme_MSA.pdf{" "}
+                            <span style={{ color: "#5a5a63" }}>· {answer.loc}</span>
+                          </span>
+                          <div className="lp-demo-snip">{answer.snippet}</div>
+                        </motion.div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="lp-demo-foot">
+          <div className="lp-demo-suggest">
+            {DEMO_QA.map((d) => (
+              <button key={d.q} className="lp-demo-sug" onClick={() => ask(d.q)}>
+                {d.q}
+              </button>
+            ))}
+          </div>
+          <form
+            className="lp-demo-inrow"
+            onSubmit={(e) => {
+              e.preventDefault();
+              ask(input);
+            }}
+          >
+            <input
+              className="lp-demo-input"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask about notice periods, liability, termination…"
+            />
+            <button type="submit" className="lp-demo-send" aria-label="Ask">
+              <Send size={16} />
+            </button>
+          </form>
+        </div>
+      </div>
+      <p className="lp-demo-note">
+        A live demo on a sample contract. Sign up to ask your own documents.
+      </p>
     </div>
   );
 }
@@ -367,6 +584,22 @@ export default function Cinematic() {
               </Reveal>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* live demo */}
+      <section className="lp-section" id="demo" style={{ paddingTop: 0 }}>
+        <div className="lp-wrap">
+          <Reveal>
+            <div className="lp-head center">
+              <span className="lp-kicker">Live demo</span>
+              <h2>See it answer — right now.</h2>
+              <p>No signup, no setup. Ask a question about a sample contract and watch Prism cite its source.</p>
+            </div>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <LiveDemo />
+          </Reveal>
         </div>
       </section>
 

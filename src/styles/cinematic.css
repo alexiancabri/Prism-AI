@@ -257,6 +257,50 @@
 .lp-footer-col a:hover { color: var(--dim); }
 .lp-footer-bottom { margin-top: 44px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--faint); }
 
+/* ---------- typing caret ---------- */
+.lp-caret {
+  display: inline-block; width: 2px; height: 1em; margin-left: 1px;
+  vertical-align: text-bottom; background: var(--blue);
+  animation: lp-blink 1s steps(1, end) infinite;
+}
+@keyframes lp-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+
+/* ---------- live demo ---------- */
+.lp-demo { margin-top: 48px; max-width: 760px; margin-left: auto; margin-right: auto; }
+.lp-demo-card {
+  border: 1px solid var(--line-2); border-radius: 20px; overflow: hidden;
+  background: linear-gradient(180deg, #0d0d12, #08080a);
+  box-shadow: 0 40px 110px -50px rgba(0, 0, 0, 0.9);
+}
+.lp-demo-head { display: flex; align-items: center; gap: 9px; padding: 14px 20px; border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+.lp-demo-head .live { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px 1px rgba(34, 197, 94, 0.7); }
+.lp-demo-body { padding: 24px; min-height: 200px; }
+.lp-demo-row { display: flex; gap: 12px; margin-bottom: 20px; }
+.lp-demo-av { width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.lp-demo-name { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
+.lp-demo-text { font-size: 14.5px; line-height: 1.65; color: var(--dim); }
+.lp-demo-empty { font-size: 14px; color: var(--faint); line-height: 1.6; }
+.lp-demo-think { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: var(--muted); }
+.lp-demo-orb { width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #6366f1); animation: lp-pulse 1.4s ease-in-out infinite; }
+@keyframes lp-pulse { 0%, 100% { transform: scale(0.82); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
+.lp-demo-chip {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 12px;
+  border: 1px solid var(--line-2); border-radius: 9px; padding: 5px 9px; font-size: 12px; color: var(--muted);
+}
+.lp-demo-chip .n { width: 16px; height: 16px; border-radius: 4px; background: rgba(59, 130, 246, 0.2); color: var(--blue-3); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+.lp-demo-snip { margin-top: 12px; border-left: 2px solid rgba(59, 130, 246, 0.5); padding-left: 12px; font-size: 12.5px; line-height: 1.6; color: var(--faint); }
+.lp-demo-foot { padding: 16px 20px 20px; border-top: 1px solid var(--line); }
+.lp-demo-suggest { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.lp-demo-sug { border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; font-size: 13px; color: var(--dim); background: rgba(255, 255, 255, 0.02); cursor: pointer; transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease; }
+.lp-demo-sug:hover { border-color: rgba(59, 130, 246, 0.6); color: var(--text); background: rgba(59, 130, 246, 0.06); }
+.lp-demo-inrow { display: flex; gap: 10px; }
+.lp-demo-input { flex: 1; height: 46px; border: 1px solid var(--line-2); background: var(--card); border-radius: 12px; padding: 0 16px; color: var(--text); font-size: 14px; outline: none; font-family: var(--sans); transition: border-color 0.16s ease; }
+.lp-demo-input::placeholder { color: var(--faint); }
+.lp-demo-input:focus { border-color: var(--blue); }
+.lp-demo-send { display: flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 12px; background: var(--blue); color: #fff; border: none; cursor: pointer; transition: background 0.16s ease; }
+.lp-demo-send:hover { background: var(--blue-2); }
+.lp-demo-note { text-align: center; margin-top: 16px; font-size: 12.5px; color: var(--faint); }
+
 /* ---------- animations ---------- */
 @keyframes lp-drift {
   0%, 100% { transform: translate(0, 0); }
