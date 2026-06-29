@@ -162,7 +162,7 @@
   background: linear-gradient(108deg, #ffffff 18%, #7fb0ff 52%, #b3bcff 82%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.lp .lp-hero-sub { margin: 26px auto 0; max-width: 600px; font-size: clamp(16px, 1.7vw, 19px); line-height: 1.6; color: var(--dim); }
+.lp .lp-hero-sub { margin: 28px auto 0; max-width: 620px; font-size: clamp(16px, 1.6vw, 18px); line-height: 1.7; color: var(--dim); text-wrap: balance; }
 .lp-hero-cta { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 38px; flex-wrap: wrap; }
 .lp-hero-trust { margin-top: 28px; font-size: 13px; color: var(--faint); display: flex; align-items: center; justify-content: center; gap: 8px; }
 
