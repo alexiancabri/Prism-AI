@@ -299,18 +299,10 @@ export default function Cinematic() {
       {/* hero */}
       <header className="lp-hero">
         <div className="lp-wrap">
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <span className="lp-eyebrow"><span className="dot" /> Grounded answers, real citations</span>
-          </motion.div>
           <motion.h1
-            style={{ marginTop: 26 }}
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
             Every answer,<br />
             <span className="lp-grad-text">traced to the source.</span>
@@ -319,10 +311,11 @@ export default function Cinematic() {
             className="lp-hero-sub"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
           >
-            Prism turns your company’s scattered documents into a single source of truth.
-            Ask anything in plain English and get an answer backed by the exact passage it came from.
+            The answer you need is already in your documents — buried where no one
+            has time to look. And AI that makes things up only makes it worse. Prism
+            finds the exact answer in seconds, and shows you where it came from.
           </motion.p>
           <motion.div
             className="lp-hero-cta"
