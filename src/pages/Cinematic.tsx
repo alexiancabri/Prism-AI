@@ -94,9 +94,9 @@ function Nav({ onStart, onLogin }: { onStart: () => void; onLogin: () => void })
           <Mark /> Prism
         </div>
         <div className="lp-nav-links">
+          <a href="#impact">Impact</a>
           <a href="#features">Product</a>
           <a href="#how">How it works</a>
-          <a href="#impact">Impact</a>
           <a href="#security">Security</a>
           <a href="#pricing">Pricing</a>
         </div>
@@ -371,57 +371,8 @@ export default function Cinematic() {
         </div>
       </section>
 
-      {/* features */}
-      <section className="lp-section" id="features">
-        <div className="lp-wrap">
-          <Reveal>
-            <div className="lp-head center">
-              <span className="lp-kicker">Why Prism</span>
-              <h2>Built to be believed.</h2>
-              <p>Most AI tools sound confident and cite nothing. Prism does the opposite — every claim is anchored to a source you can open and read for yourself.</p>
-            </div>
-          </Reveal>
-          <div className="lp-grid-3">
-            {FEATURES.map((f, i) => (
-              <Reveal key={f.title} delay={(i % 3) * 0.08}>
-                <div className="lp-card">
-                  <span className="lp-card-ico" style={{ background: `${f.color}1a`, color: f.color }}>
-                    <f.icon size={20} />
-                  </span>
-                  <h3>{f.title}</h3>
-                  <p>{f.body}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* how it works */}
-      <section className="lp-section" id="how" style={{ paddingTop: 0 }}>
-        <div className="lp-wrap">
-          <Reveal>
-            <div className="lp-head center">
-              <span className="lp-kicker">How it works</span>
-              <h2>From documents to answers in three steps.</h2>
-            </div>
-          </Reveal>
-          <div className="lp-steps">
-            {STEPS.map((s, i) => (
-              <Reveal key={s.n} delay={i * 0.08}>
-                <div className="lp-step">
-                  <span className="lp-step-n">{s.n}</span>
-                  <h3>{s.title}</h3>
-                  <p>{s.body}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* impact / time saved */}
-      <section className="lp-section" id="impact" style={{ paddingTop: 0 }}>
+      <section className="lp-section" id="impact">
         <div className="lp-wrap">
           <Reveal>
             <div className="lp-head center">
@@ -470,6 +421,55 @@ export default function Cinematic() {
               Based on a 5-person team asking ~20 questions a day, versus searching and re-reading documents by hand.
             </p>
           </Reveal>
+        </div>
+      </section>
+
+      {/* features */}
+      <section className="lp-section" id="features" style={{ paddingTop: 0 }}>
+        <div className="lp-wrap">
+          <Reveal>
+            <div className="lp-head center">
+              <span className="lp-kicker">Why Prism</span>
+              <h2>Built to be believed.</h2>
+              <p>Most AI tools sound confident and cite nothing. Prism does the opposite — every claim is anchored to a source you can open and read for yourself.</p>
+            </div>
+          </Reveal>
+          <div className="lp-grid-3">
+            {FEATURES.map((f, i) => (
+              <Reveal key={f.title} delay={(i % 3) * 0.08}>
+                <div className="lp-card">
+                  <span className="lp-card-ico" style={{ background: `${f.color}1a`, color: f.color }}>
+                    <f.icon size={20} />
+                  </span>
+                  <h3>{f.title}</h3>
+                  <p>{f.body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* how it works */}
+      <section className="lp-section" id="how" style={{ paddingTop: 0 }}>
+        <div className="lp-wrap">
+          <Reveal>
+            <div className="lp-head center">
+              <span className="lp-kicker">How it works</span>
+              <h2>From documents to answers in three steps.</h2>
+            </div>
+          </Reveal>
+          <div className="lp-steps">
+            {STEPS.map((s, i) => (
+              <Reveal key={s.n} delay={i * 0.08}>
+                <div className="lp-step">
+                  <span className="lp-step-n">{s.n}</span>
+                  <h3>{s.title}</h3>
+                  <p>{s.body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
