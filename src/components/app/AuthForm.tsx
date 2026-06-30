@@ -88,7 +88,7 @@ export default function AuthForm({ mode }: Props) {
   // Redirect once the session is actually established (avoids a race where we
   // navigate before the auth context updates and ProtectedRoute bounces back).
   useEffect(() => {
-    if (session) navigate("/dashboard", { replace: true });
+    if (session) navigate("/chat", { replace: true });
   }, [session, navigate]);
 
   // Card 3D tilt + cursor spotlight; ambient glow follows the cursor.

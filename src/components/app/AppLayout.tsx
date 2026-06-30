@@ -13,8 +13,8 @@ import "@/styles/prism-landing.css";
 import "@/styles/prism-app.css";
 
 const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, tour: "nav-dashboard" },
   { to: "/chat", label: "Chat", icon: MessagesSquare, tour: "nav-chat" },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, tour: "nav-dashboard" },
   { to: "/sources", label: "Sources", icon: Database, tour: "nav-sources" },
   { to: "/settings", label: "Settings", icon: SettingsIcon, tour: "nav-settings" },
 ];
