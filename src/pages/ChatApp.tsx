@@ -14,7 +14,7 @@ import {
   Search,
   ListChecks,
   Quote,
-  ArrowUpRight,
+  MessageSquarePlus,
   Trash2,
   ChevronLeft,
   ChevronRight,
@@ -630,9 +630,17 @@ export default function ChatApp() {
           </div>
           <div className="flex-1 overflow-y-auto px-2 pb-3">
             {conversations.length === 0 && (
-              <p className="px-3 py-4 text-sm text-[var(--text-faint)]">
-                No conversations yet.
-              </p>
+              <div className="flex flex-col items-center gap-2.5 px-4 py-10 text-center">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] text-[var(--text-faint)]">
+                  <MessageSquarePlus className="h-[18px] w-[18px]" />
+                </span>
+                <p className="text-sm font-medium text-[var(--text-dim)]">
+                  Start your first conversation
+                </p>
+                <p className="text-xs leading-relaxed text-[var(--text-faint)]">
+                  Ask a question to get going.
+                </p>
+              </div>
             )}
             {groupConversations(conversations).map((group) => (
               <div key={group.label} className="mb-3">
@@ -905,9 +913,9 @@ function WelcomeScreen({ onPick }: { onPick: (prompt: string) => void }) {
     : null;
 
   return (
-    <div className="flex min-h-[62vh] flex-col items-center justify-center px-4 text-center">
+    <div className="flex min-h-[52vh] flex-col items-center justify-center px-4 text-center">
       {/* Glowing brand mark */}
-      <div className="relative mb-7">
+      <div className="relative mb-6">
         <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-[var(--blue)] to-[var(--blue-dim)] opacity-30 blur-2xl" />
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -931,26 +939,24 @@ function WelcomeScreen({ onPick }: { onPick: (prompt: string) => void }) {
         {greetingFor(new Date().getHours())}
         {name ? `, ${name}` : ""}
       </h1>
-      <p className="mt-2 max-w-md text-sm leading-relaxed text-neutral-500">
-        Ask anything about your documents. Prism answers only from what you've
-        indexed — with exact quotes and sources.
+      <p className="mt-2.5 whitespace-nowrap text-[15px] leading-relaxed text-neutral-300">
+        Ask anything about your documents — answered with exact sources.
       </p>
 
       {prefs.showSuggestions && (
-      <div className="mt-9 grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mt-6 grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
         {SUGGESTIONS.map(({ icon: Icon, title, prompt }) => (
           <button
             key={title}
             onClick={() => onPick(prompt)}
-            className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3.5 text-left transition-all hover:border-[#3b82f6]/40 hover:bg-white/[0.04]"
+            className="group flex items-center gap-3 rounded-xl border border-white/[0.08] px-4 py-3.5 text-left transition-colors hover:border-white/20"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#3b82f6]/10 text-[#3b82f6]">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#3b82f6]/10 text-[#3b82f6] transition-shadow group-hover:shadow-[0_0_14px_rgba(59,130,246,0.45)]">
               <Icon className="h-[18px] w-[18px]" />
             </span>
             <span className="flex-1 text-sm font-medium text-neutral-200">
               {title}
             </span>
-            <ArrowUpRight className="h-4 w-4 shrink-0 text-neutral-600 transition-colors group-hover:text-[#3b82f6]" />
           </button>
         ))}
       </div>
