@@ -160,17 +160,33 @@ const RAIL_ROW = 34; // px per dot — keep in sync with .lp-rail-dot height in 
 
 function ProgressRail({ lenis }: { lenis: React.MutableRefObject<Lenis | null> }) {
   const [active, setActive] = useState(0);
+  const [thumbY, setThumbY] = useState(0);
   useEffect(() => {
     let raf = 0;
     const compute = () => {
       raf = 0;
-      const mark = window.innerHeight * 0.4;
-      let idx = 0;
-      RAIL_SECTIONS.forEach((s, i) => {
+      // Reference line at 40% of the viewport, in document coordinates.
+      const mark = window.scrollY + window.innerHeight * 0.4;
+      const tops = RAIL_SECTIONS.map((s) => {
         const el = document.getElementById(s.id);
-        if (el && el.getBoundingClientRect().top <= mark) idx = i;
+        return el ? el.getBoundingClientRect().top + window.scrollY : null;
       });
-      setActive(idx);
+      // The last section whose top has passed the mark…
+      let idx = 0;
+      tops.forEach((top, i) => {
+        if (top !== null && mark >= top) idx = i;
+      });
+      // …then interpolate toward the next one so the thumb slides continuously
+      // with scroll rather than snapping dot to dot.
+      let f = idx;
+      const cur = tops[idx];
+      const next = tops[idx + 1];
+      if (cur !== null && next !== null && next > cur) {
+        f = idx + Math.min(1, Math.max(0, (mark - cur) / (next - cur)));
+      }
+      f = Math.min(RAIL_SECTIONS.length - 1, Math.max(0, f));
+      setThumbY(f * RAIL_ROW);
+      setActive(Math.round(f));
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(compute);
@@ -203,11 +219,10 @@ function ProgressRail({ lenis }: { lenis: React.MutableRefObject<Lenis | null> }
     <nav className="lp-rail" aria-label="Page progress">
       <div className="lp-rail-pill">
         <span className="lp-rail-track" aria-hidden="true" />
-        <motion.span
+        <span
           className="lp-rail-thumb"
           aria-hidden="true"
-          animate={{ y: active * RAIL_ROW }}
-          transition={{ type: "spring", stiffness: 380, damping: 32 }}
+          style={{ transform: `translateY(${thumbY}px)` }}
         />
         {RAIL_SECTIONS.map((s, i) => (
           <button
