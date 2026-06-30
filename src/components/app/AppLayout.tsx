@@ -48,10 +48,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="prism-landing prism-app">
-      <div className="relative z-10 flex min-h-screen">
+      <div className="relative z-10 flex h-screen overflow-hidden">
         <aside
           data-tour="nav"
-          className="flex w-16 shrink-0 flex-col items-center border-r border-white/10 bg-black/60 py-4 backdrop-blur-xl"
+          className="flex h-full w-16 shrink-0 flex-col items-center border-r border-white/10 bg-black/60 py-4 backdrop-blur-xl"
         >
           {/* Logo */}
           <div className="flex h-10 w-10 items-center justify-center">{PRISM_MARK}</div>
@@ -108,7 +108,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className="relative flex-1 overflow-hidden">{children}</main>
+        <main className="relative flex-1 overflow-y-auto">{children}</main>
       </div>
 
       <FirstRun />
