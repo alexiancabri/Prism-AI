@@ -51,6 +51,71 @@ function Mark({ size = 22 }: { size?: number }) {
   );
 }
 
+/* ---------- ambient background: slow-rising light motes ---------- */
+function BackgroundFX() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let W = 0;
+    let H = 0;
+    let raf = 0;
+    const resize = () => {
+      W = canvas.clientWidth;
+      H = canvas.clientHeight;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const make = () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.5 + 0.4,
+      vx: (Math.random() - 0.5) * 0.12,
+      vy: -(Math.random() * 0.16 + 0.04),
+      a: Math.random() * 0.45 + 0.15,
+      tw: Math.random() * 0.018 + 0.004,
+      t: Math.random() * Math.PI * 2,
+    });
+    const N = Math.min(80, Math.max(28, Math.floor((W * H) / 26000)));
+    const parts = Array.from({ length: N }, make);
+
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      for (const p of parts) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.t += p.tw;
+        if (p.y < -12) {
+          p.y = H + 12;
+          p.x = Math.random() * W;
+        }
+        if (p.x < -12) p.x = W + 12;
+        if (p.x > W + 12) p.x = -12;
+        const alpha = p.a * (0.55 + 0.45 * Math.sin(p.t));
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(125,176,255,${alpha})`;
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+  return <canvas ref={ref} className="lp-fx" aria-hidden="true" />;
+}
+
 /* ---------- scroll reveal ---------- */
 function Reveal({
   children,
@@ -293,6 +358,7 @@ export default function Cinematic() {
         <div className="lp-blob b3" />
       </div>
       <div className="lp-grid" />
+      <BackgroundFX />
 
       <Nav onStart={start} onLogin={login} />
 
