@@ -313,9 +313,8 @@ export default function Cinematic() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
           >
-            The answer you need is already in your documents — buried where no one
-            has time to look. And AI that makes things up only makes it worse. Prism
-            finds the exact answer in seconds, and shows you where it came from.
+            Ask your documents anything and get the exact answer in seconds — with
+            the source behind every word.
           </motion.p>
           <motion.div
             className="lp-hero-cta"
