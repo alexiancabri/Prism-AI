@@ -22,6 +22,7 @@ import {
   PanelLeftClose,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePrefs } from "@/hooks/usePrefs";
 import {
   api,
   type Citation,
@@ -457,6 +458,7 @@ interface PendingExchange {
 
 export default function ChatApp() {
   const queryClient = useQueryClient();
+  const prefs = usePrefs();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState<PendingExchange | null>(null);
@@ -585,6 +587,10 @@ export default function ChatApp() {
         assistantMsg,
       ]);
       setTypingId(assistantMsg.id);
+      if (prefs.autoOpenSources && result.citations.length) {
+        const groups = groupCitationsByDoc(result.citations);
+        if (groups[0]) openRefs(groups[0]);
+      }
       if (activeId !== convoId) setActiveId(convoId);
       queryClient.invalidateQueries({ queryKey: ["messages", convoId] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
@@ -689,7 +695,7 @@ export default function ChatApp() {
                   message={m}
                   onOpenRefs={openRefs}
                   activeDocId={activeRefs?.citations[0]?.document_id ?? null}
-                  animate={m.id === typingId}
+                  animate={m.id === typingId && prefs.animateAnswers}
                   onTick={scrollToBottom}
                   onTypingDone={() => setTypingId(null)}
                 />
@@ -716,13 +722,21 @@ export default function ChatApp() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key !== "Enter") return;
+                  if (prefs.sendOnEnter && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                  } else if (!prefs.sendOnEnter && (e.metaKey || e.ctrlKey)) {
                     e.preventDefault();
                     send();
                   }
                 }}
                 rows={1}
-                placeholder="Ask a question…"
+                placeholder={
+                  prefs.sendOnEnter
+                    ? "Ask a question…"
+                    : "Ask a question… (⌘↵ to send)"
+                }
                 className="max-h-40 flex-1 resize-none rounded-xl border border-[var(--hairline-strong)] bg-[var(--bg-card)] px-4 py-2.5 text-sm text-[var(--text)] outline-none transition-colors placeholder:text-[var(--text-faint)] focus:border-[var(--blue)]"
               />
               <button
@@ -884,7 +898,8 @@ function groupConversations(
  *  clickable suggestion cards that prefill the composer. */
 function WelcomeScreen({ onPick }: { onPick: (prompt: string) => void }) {
   const { user } = useAuth();
-  const handle = user?.email?.split("@")[0];
+  const prefs = usePrefs();
+  const handle = prefs.displayName.trim() || user?.email?.split("@")[0];
   const name = handle
     ? handle.charAt(0).toUpperCase() + handle.slice(1)
     : null;
@@ -921,6 +936,7 @@ function WelcomeScreen({ onPick }: { onPick: (prompt: string) => void }) {
         indexed — with exact quotes and sources.
       </p>
 
+      {prefs.showSuggestions && (
       <div className="mt-9 grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
         {SUGGESTIONS.map(({ icon: Icon, title, prompt }) => (
           <button
@@ -938,6 +954,7 @@ function WelcomeScreen({ onPick }: { onPick: (prompt: string) => void }) {
           </button>
         ))}
       </div>
+      )}
     </div>
   );
 }
