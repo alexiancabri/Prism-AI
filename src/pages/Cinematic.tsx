@@ -143,6 +143,90 @@ function Reveal({
   );
 }
 
+/* ---------- progress rail ----------
+   A black pill pinned to the right edge with one dot per section. A glowing
+   thumb slides to whichever section is in view, nudging the visitor to keep
+   scrolling through the whole page. Dots are clickable shortcuts. */
+const RAIL_SECTIONS = [
+  { id: "top", label: "Top" },
+  { id: "impact", label: "Impact" },
+  { id: "features", label: "Product" },
+  { id: "how", label: "How it works" },
+  { id: "security", label: "Security" },
+  { id: "pricing", label: "Pricing" },
+  { id: "start", label: "Get started" },
+];
+const RAIL_ROW = 34; // px per dot — keep in sync with .lp-rail-dot height in cinematic.css
+
+function ProgressRail({ lenis }: { lenis: React.MutableRefObject<Lenis | null> }) {
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const compute = () => {
+      raf = 0;
+      const mark = window.innerHeight * 0.4;
+      let idx = 0;
+      RAIL_SECTIONS.forEach((s, i) => {
+        const el = document.getElementById(s.id);
+        if (el && el.getBoundingClientRect().top <= mark) idx = i;
+      });
+      setActive(idx);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(compute);
+    };
+    compute();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  const go = (id: string) => {
+    // Lenis owns the scroll when smooth-scrolling is active — going through it
+    // avoids the instance snapping us back. Falls back to native scroll when
+    // Lenis is disabled (reduced-motion).
+    const target = id === "top" ? 0 : (document.getElementById(id) as HTMLElement | null);
+    if (lenis.current && target !== null) {
+      lenis.current.scrollTo(target, { offset: id === "top" ? 0 : -8 });
+    } else if (id === "top") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      (target as HTMLElement | null)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  return (
+    <nav className="lp-rail" aria-label="Page progress">
+      <div className="lp-rail-pill">
+        <span className="lp-rail-track" aria-hidden="true" />
+        <motion.span
+          className="lp-rail-thumb"
+          aria-hidden="true"
+          animate={{ y: active * RAIL_ROW }}
+          transition={{ type: "spring", stiffness: 380, damping: 32 }}
+        />
+        {RAIL_SECTIONS.map((s, i) => (
+          <button
+            key={s.id}
+            type="button"
+            className={`lp-rail-dot${i === active ? " active" : ""}${i < active ? " done" : ""}`}
+            onClick={() => go(s.id)}
+            aria-label={s.label}
+            aria-current={i === active ? "step" : undefined}
+          >
+            <span className="d" />
+            <span className="lp-rail-label">{s.label}</span>
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
 /* ---------- nav ---------- */
 function Nav({ onStart, onLogin }: { onStart: () => void; onLogin: () => void }) {
   const [scrolled, setScrolled] = useState(false);
@@ -333,11 +417,14 @@ export default function Cinematic() {
   const navigate = useNavigate();
   const start = () => navigate("/get-started");
   const login = () => navigate("/login");
+  const lenisRef = useRef<Lenis | null>(null);
 
-  // Smooth scrolling for a premium feel (respects reduced-motion).
+  // Smooth scrolling for a premium feel (respects reduced-motion). Held in a
+  // ref so the progress rail can drive it directly.
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const lenis = new Lenis({ duration: 1.1, smoothWheel: true });
+    lenisRef.current = lenis;
     let raf = 0;
     const loop = (t: number) => {
       lenis.raf(t);
@@ -347,6 +434,7 @@ export default function Cinematic() {
     return () => {
       cancelAnimationFrame(raf);
       lenis.destroy();
+      lenisRef.current = null;
     };
   }, []);
 
@@ -361,9 +449,10 @@ export default function Cinematic() {
       <BackgroundFX />
 
       <Nav onStart={start} onLogin={login} />
+      <ProgressRail lenis={lenisRef} />
 
       {/* hero */}
-      <header className="lp-hero">
+      <header className="lp-hero" id="top">
         <div className="lp-wrap">
           <motion.h1
             initial={{ opacity: 0, y: 24 }}
@@ -623,7 +712,7 @@ export default function Cinematic() {
       </section>
 
       {/* final CTA */}
-      <section className="lp-final">
+      <section className="lp-final" id="start">
         <div className="lp-wrap">
           <Reveal>
             <div className="lp-final-card">

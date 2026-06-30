@@ -127,6 +127,113 @@
 .lp-login { font-size: 14.5px; color: var(--dim); cursor: pointer; transition: color 0.16s ease; }
 .lp-login:hover { color: var(--text); }
 
+/* ---------- progress rail ----------
+   Black pill on the right edge tracking how far through the page the visitor
+   has scrolled. A glowing thumb slides between dots; each dot links to its
+   section. Hidden on small screens where there isn't room. */
+.lp-rail {
+  position: fixed;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 55;
+  display: flex;
+}
+.lp-rail-pill {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 9px;
+  background: rgba(8, 8, 10, 0.72);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.55);
+}
+/* faint spine the dots sit on */
+.lp-rail-track {
+  position: absolute;
+  left: 50%;
+  top: 21px;
+  bottom: 21px;
+  width: 2px;
+  transform: translateX(-50%);
+  background: var(--line);
+  border-radius: 2px;
+}
+/* sliding glow behind the active dot — y is animated in JS (active * 34px) */
+.lp-rail-thumb {
+  position: absolute;
+  left: 50%;
+  top: 12px; /* = pill padding-top */
+  width: 28px;
+  height: 34px; /* = .lp-rail-dot height (RAIL_ROW) */
+  margin-left: -14px;
+  pointer-events: none;
+}
+.lp-rail-thumb::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 28px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.5), rgba(59, 130, 246, 0) 68%);
+}
+.lp-rail-dot {
+  position: relative;
+  width: 28px;
+  height: 34px; /* RAIL_ROW — keep in sync with Cinematic.tsx */
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.lp-rail-dot .d {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--faint);
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.lp-rail-dot:hover .d { background: var(--dim); }
+.lp-rail-dot.done .d { background: var(--blue-3); }
+.lp-rail-dot.active .d {
+  background: #fff;
+  transform: scale(1.3);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.95);
+}
+/* hover label flag to the left of the dot */
+.lp-rail-label {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  white-space: nowrap;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--text);
+  background: rgba(8, 8, 10, 0.92);
+  border: 1px solid var(--line-2);
+  padding: 4px 10px;
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(6px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.lp-rail-dot:hover .lp-rail-label {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+@media (max-width: 860px) {
+  .lp-rail { display: none; }
+}
+
 /* ---------- background atmospherics ---------- */
 .lp-aurora { position: absolute; top: 0; left: 0; right: 0; height: 1100px; overflow: hidden; pointer-events: none; z-index: 0; }
 .lp-blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.5; }
